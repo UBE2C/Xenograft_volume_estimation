@@ -11,15 +11,16 @@
 
 
 
+
 ## Check for the required packages and install them if missing
 
 
 # The list of required packages
-packages <- c("tidyverse", "optparse")
+CRAN_packages <- c("tidyverse", "optparse", "rstudioapi")
 
 
 # A function to check and install packages
-package_controller = function(packages){
+package_controller = function(packages = CRAN_packages) {
     
     #The main if statement to make sure there are packages to check
     if (!is.null(packages)) {
@@ -46,7 +47,7 @@ package_controller = function(packages){
 
 
 # A function to load required packages
-package_loader = function(packages) {
+package_loader = function(packages = CRAN_packages) {
     lapply(packages, library, character.only = TRUE)
 }
 
@@ -55,8 +56,9 @@ package_loader = function(packages) {
 
 ## Define the path to the directory this script is in
 script_path <- rstudioapi::getActiveDocumentContext()$path
-script_dir_path <- stringr::str_remove(path, "[A-z0-9]+\\W[A-z0-9]+\\W[A-z0-9]+.r$")
+script_dir_path <- stringr::str_remove(script_path, "[A-z0-9]+\\W[A-z0-9]+\\W[A-z0-9]+.r$")
 setwd(script_dir_path)
+
 
 
 
@@ -171,12 +173,18 @@ main = function() {
     args <- commandArgs(trailingOnly = TRUE)
 
     # Call the package management functions
-    package_controller()
-    package_loader()
+    package_controller(CRAN_packages)
+    package_loader(CRAN_packages)
     
+    input_csv_list <- read_data()
+    processed_csv_list <- process_data(input_csv_list)
+    
+    message("Test message for the main function.")
+    print(processed_csv_list)
     
 }
 
+main()
 
 
 
