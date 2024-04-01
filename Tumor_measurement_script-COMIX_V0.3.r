@@ -67,12 +67,7 @@ read_data = function(csv_file_path) {
         if (grepl(".csv$", csv_files[index]) == TRUE) {
             tmp_file <- read.csv(file = csv_files[index], header = TRUE, sep = ";")
             input_list[[index]] <- tmp_file
-            #assign(x = csv_files[index], value = tmp_file, envir = .GlobalEnv)
-
-            #Creating a file list without NA values as an input for the process function
-            #file_list[index] <- csv_files[index]
-            #file_list <- file_list[!is.na(file_list)]
-            #assign(x = "file_list", value = file_list, envir = .GlobalEnv)
+            
         } else {
             warning(paste0("The input file ", csv_files[index], " is not a .csv.", "\n",
             "Jumping over to the next file."))
