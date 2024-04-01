@@ -116,6 +116,8 @@ process_data = function(data_list) {
 
     }
 
+    #NOTE: This part makes the function useless as a generic data processing function!
+    #for a generic use, the following parts need a re-write
     #This snippet will split up the resulting unified dataframe to the two input files
     processed_group_1 <- processed_data[1:14, ]
     processed_group_2 <- processed_data[15:28, ]
