@@ -1,6 +1,7 @@
 #!user/bin/env -S Rscript --vanilla
 
 
+
 #########################################
 #                                       #
 #   Tumor measurement data processing   #
@@ -90,6 +91,7 @@ read_data = function(csv_file_path = script_dir_path) {
     
     #Return the output list
     return(output_csv_list)
+
 }
 
 
@@ -126,12 +128,14 @@ process_data = function(data_list) {
 
     #NOTE: This part makes the function useless as a generic data processing function!
     #for a generic use, the following parts need a re-write
+
     #This snippet will split up the resulting unified dataframe to the two input files
     processed_group_1 <- processed_data[1:14, ]
     processed_group_2 <- processed_data[15:28, ]
 
     #Prepare the proper column and row names for Group1
     split_measurements <- c("_L", "_W")
+
     g1_sample_dates <- colnames(data_list[[1]][7:13])
     
     g1_rownames <- paste0(rep(g1_sample_dates, each = 2), rep(split_measurements, times = 7))
@@ -156,6 +160,7 @@ process_data = function(data_list) {
 
     #Return the list containing the processed DFs
     return(processed_data_lst)
+
 }
 
 
@@ -169,9 +174,6 @@ main = function() {
     package_controller()
     package_loader()
     
-
-
-
     
 }
 
