@@ -77,55 +77,13 @@ read_data = function(csv_file_path) {
         
     }
 
-    #An sapply subselect to remove NULL elements form the list (these were created from non .csv entries)
-    input_list <- input_list[!sapply(input_list, is.null)]
+    #An sapply subset to remove NULL elements form the list (these were created from non .csv entries)
+    output_csv_list <- input_list[!sapply(input_list, is.null)]
     
     #Return the output list
-    return(input_list)
+    return(output_csv_list)
 }
 
-
-
-
-##  This function splits the Length and Width measurements in the loaded tumor measurement files
-process_data = function(file_list = file_list) {
-    #Create a new dataframe with the sample IDs and L-W entries
-    processed_data <- data.frame(matrix(nrow = 14, ncol = 22))
-    test_lst <- list()
-
-    #This loop will load the dataframes to process one by one
-    for (index in seq_along(file_list)) {
-        tmp_dataframe <- get(file_list[index])
-
-        #Determining the range for the second for loop based on the names of the measurement columns
-        measurement_cols <- grep(pattern = "^X", x = colnames(tmp_dataframe))
-
-        #This for loop and if statement will go though the appropriate columns and will split the entries
-        for (i in seq_along(measurement_cols)) {
-            for (e in seq_along(nrow(processed_data))){
-                processed_data[e, ] <- stringr::str_split_i(string = tmp_dataframe[, measurement_cols[i]],
-                pattern = "x", i = 1)
-
-                processed_data[e + 1, ] <- stringr::str_split_i(string = tmp_dataframe[, measurement_cols[i]],
-                pattern = "x", i = 2)
-            }
-            #processed_data[index][[i]] <- rbind(stringr::str_split(string = tmp_dataframe[, measurement_cols[i]],
-            #pattern = "x", simplify = TRUE))
-            
-            #print(cbind(stringr::str_split(string = tmp_dataframe[, measurement_cols[i]],
-            #pattern = "x", simplify = TRUE)))
-            
-        }
-    
-    test_lst[[index]] <- processed_data
-    print(test_lst)
-    #Return the processed data
-    #return(processed_data)
-
-    }
-
-    
-}
 
 
 
@@ -133,11 +91,11 @@ process_data = function(file_list = file_list) {
 process_data = function(data_list) {
     #Create a new dataframe with the sample IDs and L-W entries
     processed_data <- data.frame()
-    #test_lst <- list()
+    processed_data_lst <- list()
 
     #This loop will load the dataframes to process one by one
     for (index in seq_along(data_list)) {
-        tmp_dataframe <- get(data_list[index])
+        tmp_dataframe <- data_list[index]
 
         #Determining the range for the second for loop based on the names of the measurement columns
         measurement_cols <- grep(pattern = "^X", x = colnames(tmp_dataframe))
