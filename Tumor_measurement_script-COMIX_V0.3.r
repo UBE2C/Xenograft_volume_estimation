@@ -1,4 +1,4 @@
-#!user/bin/Rscript
+#!user/bin/env -S Rscript --vanilla
 
 
 #########################################
@@ -161,6 +161,7 @@ main = function() {
     package_controller()
     package_loader()
     
+
 
 
     
