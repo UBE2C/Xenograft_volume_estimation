@@ -52,18 +52,6 @@ package_loader = function(packages) {
 
 
 
-## The main function which will return the clean, modified data frame/data frames
-main = function() {
-    args <- commandArgs(trailingOnly = TRUE)
-
-
-
-    
-}
-
-
-
-
 ## Data reading function
 read_data = function(csv_file_path) {
     
@@ -200,6 +188,18 @@ process_data = function(data_list) {
 
 
 
+## The main function which will return the clean, modified data frame/data frames
+main = function() {
+    args <- commandArgs(trailingOnly = TRUE)
+
+    # Call the package management functions
+    package_controller()
+    package_loader()
+    
+
+
+    
+}
 
 
 
