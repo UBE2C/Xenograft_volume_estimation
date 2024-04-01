@@ -95,7 +95,7 @@ process_data = function(data_list) {
 
     #This loop will load the dataframes to process one by one
     for (index in seq_along(data_list)) {
-        tmp_dataframe <- data_list[index]
+        tmp_dataframe <- data_list[[index]]
 
         #Determining the range for the second for loop based on the names of the measurement columns
         measurement_cols <- grep(pattern = "^X", x = colnames(tmp_dataframe))
@@ -122,16 +122,16 @@ process_data = function(data_list) {
 
     #Prepare the proper column and row names for Group1
     split_measurements <- c("_L", "_W")
-    g1_sample_dates <- colnames(get(data_list[1])[7:13])
+    g1_sample_dates <- colnames(data_list[[1]][7:13])
     
     g1_rownames <- paste0(rep(g1_sample_dates, each = 2), rep(split_measurements, times = 7))
-    g1_colnames <- get(data_list[1])[, 3]
+    g1_colnames <- data_list[[1]][, 3]
 
     #Prepare the proper column and row names for Group2
-    g2_sample_dates <- colnames(get(data_list[2])[7:13])
+    g2_sample_dates <- colnames(data_list[[2]][7:13])
     
     g2_rownames <- paste0(rep(g2_sample_dates, each = 2), rep(split_measurements, times = 7))
-    g2_colnames <- get(data_list[2])[, 3]
+    g2_colnames <- data_list[[2]][, 3]
 
     #Assign the new column and row names to the new dataframes
     rownames(processed_group_1) <- g1_rownames
@@ -140,10 +140,12 @@ process_data = function(data_list) {
     rownames(processed_group_2) <- g2_rownames
     colnames(processed_group_2) <- g2_colnames
 
-#################################################################################################################################
-#continue from here
-    print(processed_group_1)
-    print(processed_group_2)
+    #Add the two processed DFs to the clean processed data list
+    processed_data_lst[[1]] <- processed_group_1
+    processed_data_lst[[2]] <- processed_group_2
+
+    #Return the list containing the processed DFs
+    return(processed_data_lst)
 }
 
 
