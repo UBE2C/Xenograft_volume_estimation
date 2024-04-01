@@ -52,8 +52,16 @@ package_loader = function(packages) {
 
 
 
+## Define the path to the directory this script is in
+script_path <- rstudioapi::getActiveDocumentContext()$path
+script_dir_path <- stringr::str_remove(path, "[A-z0-9]+\\W[A-z0-9]+\\W[A-z0-9]+.r$")
+setwd(script_dir_path)
+
+
+
+
 ## Data reading function
-read_data = function(csv_file_path) {
+read_data = function(csv_file_path = script_dir_path) {
     
     #List files in the file path
     csv_files <- list.files(csv_file_path, full.names = TRUE)
