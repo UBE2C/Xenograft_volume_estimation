@@ -1,4 +1,4 @@
-#!user/bin/env -S Rscript --vanilla
+#!usr/bin/env -S Rscript --vanilla
 
 
 
@@ -16,7 +16,7 @@
 
 
 # The list of required packages
-CRAN_packages <- c("tidyverse", "optparse", "rstudioapi")
+CRAN_packages <- c("tidyverse", "optparse", "this.path")
 
 
 # A function to check and install packages
@@ -55,8 +55,7 @@ package_loader = function(packages = CRAN_packages) {
 
 
 ## Define the path to the directory this script is in
-script_path <- rstudioapi::getActiveDocumentContext()$path
-script_dir_path <- stringr::str_remove(script_path, "[A-z0-9]+\\W[A-z0-9]+\\W[A-z0-9]+.r$")
+script_dir_path <- this.path::here()
 setwd(script_dir_path)
 
 
@@ -79,7 +78,7 @@ options_list <- list(
     help = "This argument takes a character string which defines the name of the output .csv files. \n
     By default the script sets the name to processed_table."),
 
-    optparse::make_option(opt_str = c("-v", "--verbose"), action = "store_true", default = TRUE, dest = "verbose",
+    optparse::make_option(opt_str = c("-v", "--verbose"), action = "store_true", default = FALSE, dest = "verbose",
     help = "This argument takes a boolean as an input and controls if the program returns additional information like the outputs of the sub-functions. \n
     By default the option is set to [default].")
 
@@ -256,6 +255,7 @@ main = function(input_path = arguments$input_path, output_path = arguments$outpu
 
     #Call the session info if verbose is TRUE
     if (verb == TRUE) {
+        message("Printing the R session info:")
         sessionInfo()
     }
     
