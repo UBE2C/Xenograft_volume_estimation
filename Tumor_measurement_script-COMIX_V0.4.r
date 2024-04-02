@@ -79,13 +79,10 @@ options_list <- list(
     help = "This argument takes a character string which defines the name of the output .csv files. \n
     By default the script sets the name to processed_table."),
 
-    optparse::make_option(opt_str = c("-v", "--verbose"), action = "store_true", type = "logical", 
+    optparse::make_option(opt_str = c("-v", "--verbose"), action = "store_true", default = TRUE, dest = "verbose",
     help = "This argument takes a boolean as an input and controls if the program returns additional information like the outputs of the sub-functions. \n
-    By default the option is set to TRUE."),
+    By default the option is set to [default].")
 
-    optparse::make_option(opt_str = c("-q", "--quite"), action = "store_false", type = "logical",
-    help = "This argument takes a boolean as an input and controls if the program runs completely silent without returning any information, including warnings. \n
-    By default the option is set to FALSE.")
 )
 
 
@@ -96,8 +93,11 @@ arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = 
                                     positional_arguments = FALSE,
                                     convert_hyphens_to_underscores = FALSE)
 
+
+
+
 ## Data reading function
-read_data = function(csv_file_path = script_dir_path) {
+read_data = function(csv_file_path, verbose) {
     
     #List files in the file path
     csv_files <- list.files(csv_file_path, full.names = TRUE)
@@ -117,6 +117,7 @@ read_data = function(csv_file_path = script_dir_path) {
             warning(paste0("The input file ", csv_files[index], " is not a .csv.", "\n",
             "Jumping over to the next file."))
             next
+            
         }
     
         
@@ -125,6 +126,14 @@ read_data = function(csv_file_path = script_dir_path) {
     #An sapply subset to remove NULL elements form the list (these were created from non .csv entries)
     output_csv_list <- input_list[!sapply(input_list, is.null)]
     
+    #An if statement controlling how much information the function should return if verbose is TRUE
+    if (verbose == TRUE) {
+        message("Printing the loaded dataframes ready for processing:")
+        print(output_csv_list[[1]])
+        print(output_csv_list[[2]])
+        
+    }
+
     #Return the output list
     return(output_csv_list)
 
@@ -134,7 +143,7 @@ read_data = function(csv_file_path = script_dir_path) {
 
 
 ##  This function splits the Length and Width measurements in the loaded tumor measurement files
-process_data = function(data_list) {
+process_data = function(data_list, verbose) {
     #Create a new dataframe with the sample IDs and L-W entries
     processed_data <- data.frame()
     processed_data_lst <- list()
@@ -194,6 +203,13 @@ process_data = function(data_list) {
     processed_data_lst[[1]] <- processed_group_1
     processed_data_lst[[2]] <- processed_group_2
 
+    #An if statement controlling how much information the function should return if verbose is TRUE
+    if (verbose == TRUE) {
+        message("Printing the processed dataframes:")
+        print(processed_data_lst[[1]])
+        print(processed_data_lst[[2]])
+    }
+
     #Return the list containing the processed DFs
     return(processed_data_lst)
 
@@ -203,20 +219,52 @@ process_data = function(data_list) {
 
 
 ## The main function which will return the clean, modified data frame/data frames
-main = function() {
+main = function(input_path = arguments$input_path, output_path = arguments$output_path, 
+                output_name = arguments$output_name, verb = arguments$verbose) {
 
-    # Call the package management functions
+    #Call the package management functions
     package_controller(CRAN_packages)
     package_loader(CRAN_packages)
     
-    input_csv_list <- read_data()
-    processed_csv_list <- process_data(input_csv_list)
+    #Call the read_data function to load the data from the default or given input path
+    input_csv_list <- read_data(input_path, verbose = verb)
+
+    #Call the processing function with the output
+    processed_csv_list <- process_data(input_csv_list, verbose = verb)
     
-    message("Test message for the main function.")
-    print(processed_csv_list)
+    #Save the processed files based on the output path
+    if (dir.exists(output_path) == TRUE) {
+        for (index in seq_len(length(processed_csv_list))) {
+            readr::write_csv(x = processed_csv_list[[index]], file = paste0(output_path, "/", output_name, "_", index, ".csv"))
+        }
+
+    } else {
+        #An if statement controlling how much information the function should return if verbose is TRUE
+        if (verb == TRUE) {
+            message("The given directory on the output_path does not exists. Creating one...")
+        }
+
+        #Creating the given directory as a save location
+        dir.create(output_path)
+        
+        #Saving the processed .csv files to the output directory
+        for (index in seq_len(length(processed_csv_list))) {
+            readr::write_csv(x = processed_csv_list[[index]], file = paste0(output_path, "/", output_name, "_", index, ".csv"))
+        }
+
+    }
+
+    #Call the session info if verbose is TRUE
+    if (verb == TRUE) {
+        sessionInfo()
+    }
     
 }
 
+
+
+
+## Calling the main function
 main()
 
 
