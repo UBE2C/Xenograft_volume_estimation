@@ -221,9 +221,16 @@ process_data = function(data_list, verbose) {
 main = function(input_path = arguments$input_path, output_path = arguments$output_path, 
                 output_name = arguments$output_name, verb = arguments$verbose) {
 
-    #Call the package management functions
-    package_controller(CRAN_packages)
-    package_loader(CRAN_packages)
+    #Call the package management functions with an option to verbose or not
+    if (verb == TRUE) {
+        package_controller(CRAN_packages)
+        package_loader(CRAN_packages)        
+    
+    } else {
+        suppressMessages(package_controller(CRAN_packages))
+        suppressPackageStartupMessages(package_loader(CRAN_packages))
+    }
+    
     
     #Call the read_data function to load the data from the default or given input path
     input_csv_list <- read_data(input_path, verbose = verb)
