@@ -36,7 +36,7 @@ package_controller = function(packages = CRAN_packages) {
                 install.packages(element)
 
             } else {
-                message("The requested package is already installed.")
+                message(paste0("The requested package: ", element, "is already installed."))
             }
         }
     } else {
@@ -113,9 +113,16 @@ read_data = function(csv_file_path, verbose) {
             input_list[[index]] <- tmp_file
             
         } else {
-            warning(paste0("The input file ", csv_files[index], " is not a .csv.", "\n",
-            "Jumping over to the next file."))
-            next
+            if (verbose == TRUE) {
+                warning(paste0("The input file ", csv_files[index], " is not a .csv.", "\n",
+                "Jumping over to the next file."))
+                next
+            
+            } else {
+                next
+            
+            } 
+            
             
         }
     
@@ -127,7 +134,7 @@ read_data = function(csv_file_path, verbose) {
     
     #An if statement controlling how much information the function should return if verbose is TRUE
     if (verbose == TRUE) {
-        message("\n Printing the loaded dataframes ready for processing:")
+        message("\nPrinting the loaded dataframes ready for processing:")
         print(output_csv_list[[1]])
         print(output_csv_list[[2]])
         
@@ -204,7 +211,7 @@ process_data = function(data_list, verbose) {
 
     #An if statement controlling how much information the function should return if verbose is TRUE
     if (verbose == TRUE) {
-        message("\n Printing the processed dataframes:")
+        message("\nPrinting the processed dataframes:")
         print(processed_data_lst[[1]])
         print(processed_data_lst[[2]])
     }
@@ -247,7 +254,7 @@ main = function(input_path = arguments$input_path, output_path = arguments$outpu
     } else {
         #An if statement controlling how much information the function should return if verbose is TRUE
         if (verb == TRUE) {
-            message("\n The given directory on the output_path does not exists. Creating one...")
+            message("\nThe given directory on the output_path does not exists. Creating one...")
         }
 
         #Creating the given directory as a save location
@@ -262,9 +269,14 @@ main = function(input_path = arguments$input_path, output_path = arguments$outpu
 
     #Call the session info if verbose is TRUE
     if (verb == TRUE) {
-        message("\n Printing the R session info:")
-        sessionInfo()
+        message("\nPrinting the R session info:")
+        print(sessionInfo())
     }
+
+    message(paste0("\nThe data processing was successful! \n",
+                    "Your processed data was saved to:\n",
+                    output_path, "\n",
+                    "with the name: ", output_name, "\n"))
     
 }
 
