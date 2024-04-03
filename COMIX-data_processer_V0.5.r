@@ -79,14 +79,20 @@ options_list <- list(
     By default the script sets the name to processed_table."),
 
     optparse::make_option(opt_str = c("-v", "--verbose"), action = "store_true", default = FALSE, dest = "verbose",
-    help = "This argument takes a boolean as an input and controls if the program returns additional information like the outputs of the sub-functions. \n
-    By default the option is set to [default].")
+    help = "This argument controls if the program returns additional information like the outputs of the sub-functions, messages and warnings. \n
+    By default the option is set to FALSE.")
 
 )
 
 
+# Create a program description
+prog_descr <- c(paste0("The COMIX-data_processer is specifically made to process the caliper tumor measurements done for the COMIX experiments.\n",
+                "This program can be run form the command line as a standalone program or as a subprogram for the full data processing and tumor volume calculation script. \n",
+                "For a standalone run use the 'Rscript COMIX-data_processer_V[option] [optional args]' syntax."))
+
 # Parse the arguments to the arguments variable
-arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = options_list),
+arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = options_list, 
+                                    description = prog_descr),
                                     args = commandArgs(trailingOnly = TRUE),
                                     print_help_and_exit = TRUE,
                                     positional_arguments = FALSE,
