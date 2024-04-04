@@ -61,7 +61,44 @@ setwd(script_dir_path)
 
 
 
-## Loading the data files needed for the calculations
+## Define the path to the intermediate input file directory
+interm_inputs <- paste0(script_dir_path, "/", "Intermediate_input_files")
+
+
+
+
+## Loading and cleaning the data files needed for the calculations
+
+
+# Loading the control uCT measurements
+uCT_volumes <- read.csv(file = paste0(interm_inputs, "/", "uCT_ctrl_measurements.csv"),
+                        sep = ";")
+
+# Remove entries without caliper measurements
+uCT_volumes <- uCT_volumes[-c(1, 3, 9), ]
+rownames(uCT_volumes) <- seq_len(nrow(uCT_volumes))
+
+
+# Loading the cleaned output files from the Data-processer 
+caliper_measurements <- list()
+for (element in list.files(interm_inputs)) {
+    if (grepl("processed", element) == TRUE) {
+        caliper_measurements[[element]] <- read.csv(file = paste0(interm_inputs, "/", element))
+
+    }
+    
+}
+
+
+
+
+## Calculate the f constant for the uCT measurements
+
+
+# Trim the caliper measurements to the entries I will start with
+G2_ctrl_caliper <- caliper_measurements[[2]][grep(pattern = "21.02.2024", x = caliper_measurements[[2]]$Dates), uCT_volumes$Mouse.ID[4:7]]
+rownames(G2_ctrl_caliper) <- c("L", "W")
+
 
 
 
