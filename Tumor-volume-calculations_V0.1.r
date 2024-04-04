@@ -100,5 +100,18 @@ G2_ctrl_caliper <- caliper_measurements[[2]][grep(pattern = "21.02.2024", x = ca
 rownames(G2_ctrl_caliper) <- c("L", "W")
 
 
+# Trim the uCT volumes I will start with
+G2_ctrl_uCT <- uCT_volumes[4:7, ]
+
+# Calculate the f constants
+# NOTE: original formula V = (pi/6) * f * (l * w)^(3/2)
+# NOTE: formula solved to f f = V / (pi/6) * (l * w)^(3/2)
+f_constants <- cbind(G2_ctrl_uCT[, c(5, 2, 4)], t(G2_ctrl_caliper[, c(1, 2)]))
+
+for (i in seq_len(nrow(G2_ctrl_uCT))) {
+    f_constants$calc_f[i] <- G2_ctrl_uCT$Tumor.volume..mm3.[i] / ((pi/6) * (G2_ctrl_caliper[1, i] * G2_ctrl_caliper[2, i])^(3/2))
+
+}
 
 
+#
