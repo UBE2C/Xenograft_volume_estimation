@@ -5,7 +5,7 @@
 #########################################
 #                                       #
 #   Tumor measurement data processing   #
-#               COMIX data              #
+#     COMIX data processer module       #
 #                                       #
 #########################################
 
@@ -214,6 +214,14 @@ process_data = function(data_list, verbose) {
     #Add the two processed DFs to the clean processed data list
     processed_data_lst[[1]] <- processed_group_1
     processed_data_lst[[2]] <- processed_group_2
+
+    #Add the rownames as a new column so that they will be saved when the data is written into new .csv files
+    processed_data_lst[[1]] <- dplyr::mutate(.data = processed_data_lst[[1]],
+                                        Dates = rownames(processed_data_lst[[1]]),
+                                        .before = colnames(processed_data_lst[[1]])[1])
+    processed_data_lst[[2]] <- dplyr::mutate(.data = processed_data_lst[[2]],
+                                        Dates = rownames(processed_data_lst[[2]]),
+                                        .before = colnames(processed_data_lst[[2]])[1])
 
     #An if statement controlling how much information the function should return if verbose is TRUE
     if (verbose == TRUE) {
