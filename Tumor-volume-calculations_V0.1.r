@@ -92,7 +92,7 @@ for (element in list.files(interm_inputs)) {
 
 
 
-## Calculate the f constant for the uCT measurements
+## Calculate the f constant for the test ctrl uCT measurements
 
 
 # Trim the caliper measurements to the entries I will start with
@@ -102,6 +102,7 @@ rownames(G2_ctrl_caliper) <- c("L", "W")
 
 # Trim the uCT volumes I will start with
 G2_ctrl_uCT <- uCT_volumes[4:7, ]
+
 
 # Calculate the f constants
 # NOTE: original formula V = (pi/6) * f * (l * w)^(3/2)
@@ -114,4 +115,4 @@ for (i in seq_len(nrow(G2_ctrl_uCT))) {
 }
 
 
-#
+# Calculate the mean f and re-estimate the tumor volumes with the mean_f
