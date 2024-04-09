@@ -12,6 +12,13 @@
 
 
 
+
+
+################################################# MARK: Package and path #################################################
+                                                #       management       #
+
+
+
 ## Check for the required packages and install them if missing
 
 
@@ -54,32 +61,54 @@ package_loader = function(packages = CRAN_packages) {
 
 
 
-## Define the path to the directory this script is in
+## Define the paths for the script and I/O files
+
+
+# Define the path to the directory this script is in
 script_dir_path <- this.path::here()
 setwd(script_dir_path)
 
 
+# Define the path to the intermediate input/output file directory
+intermediate_IO <- paste0(script_dir_path, "/", "Intermediate_IO")
 
 
-## Define the path to the intermediate input file directory
-interm_inputs <- paste0(script_dir_path, "/", "Intermediate_input_files")
+################################################# Section end #################################################
 
 
 
+
+################################################# MARK: Data reading #################################################
+                                                #   and management   #
 
 ## Loading and cleaning the data files needed for the calculations
+## NOTE: this sub-function needs the clean output from the previous module and a new file with the uCT measurements 
+read_uCT_data = function(data_path = intermediate_IO) {
+    #List files in the intermediate I/O folder
+    intermediate_IO_files <- list.files(path = data_path)
+    uCT_file_name <- intermediate_IO_files[grep(pattern = "uCT", x = intermediate_IO_files)]
+
+    #Load the control uCT measurements
+    if (is.element(el = uCT_file_name, set = intermediate_IO_files) == TRUE) {
+        uCT_data <- read.csv(file = paste0(data_path, "/", uCT_file_name), sep = ";")
+
+    } else {
+        warning("No uCT input table was found in the ", data_path, " directory.")
+
+    }
+
+    #Return the uCT data
+    return(uCT_data)
+}
 
 
-# Loading the control uCT measurements
-uCT_volumes <- read.csv(file = paste0(interm_inputs, "/", "uCT_ctrl_measurements.csv"),
-                        sep = ";")
 
 # Remove entries without caliper measurements
 uCT_volumes <- uCT_volumes[-c(1, 3, 9), ]
 rownames(uCT_volumes) <- seq_len(nrow(uCT_volumes))
 
 
-# Loading the cleaned output files from the Data-processer 
+# Loading the cleaned output files from the Data-processer module
 caliper_measurements <- list()
 for (element in list.files(interm_inputs)) {
     if (grepl("processed", element) == TRUE) {
