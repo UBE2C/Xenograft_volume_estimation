@@ -19,6 +19,7 @@
 
 
 
+
 ## Check for the required packages and install them if missing
 
 
@@ -83,6 +84,9 @@ intermediate_IO <- paste0(script_dir_path, "/", "Intermediate_IO")
 ################################################# MARK: Data reading #################################################
                                                 #   and management   #
 
+
+
+
 ## Loading and cleaning the uCT data files needed for the calculations
 ## NOTE: the first sub-function needs a new file with the uCT measurements 
 
@@ -138,7 +142,7 @@ clean_uCT_data = function(read_uCT_output_list) {
 
         } else {
             #Print a warning about the missing column
-            warning("The column: 'Has_corresponding_caliper_measurements', cannot be found in the file: ", names(read_uCT_output_list)[index],   
+            warning("The column: 'Has_corresponding_caliper_measurements', was not found in the file: ", names(read_uCT_output_list)[index],   
                     "\n  Assuming all entries would be 'Yes' the unmodified uCT_data_frame will be added to the output list")
             
             #Add the unmodified uCT df to the output list
@@ -204,7 +208,71 @@ read_caliper_data = function(data_path = intermediate_IO) {
 
 
 
+## Processing the caliper measurements to match the entries of the uCT data
+
+
 # Trim the caliper measurements to all the uCT entries based on date
+# This function will process the caliper measurements to fit the dates and samples recorded in the uCT measurements
+fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_data_output_list) {
+    #Initialize a list onto which the trimmed down caliper measurements will be added
+    trimmed_caliper_list <- list()
+    
+    #Initialize a temporary dataframe on which the processing can take place
+    temp_df <- data.frame()
+
+    #initialize a list onto which the unique dates of the corresponding caliper measurements will be added
+    corresponding_dates <- vector(mode = "list", length = length(clean_uCT_data_output_list))
+
+    #A for loop which traverses the clean uCT measurement list to assign the corresponding dates to the proper list
+    for (i in seq_along(clean_uCT_data_output_list)) {
+            
+            #An if statements which controls which date columns will be used for sample matching
+            if (is.element(el = "Corresponding_caliper_measurement_date", set = colnames(x = clean_uCT_data_output_list[[i]]))) {
+                
+                #Assign the corresponding dates to the proper list
+                corresponding_dates[[i]] <- unique(clean_uCT_data_output_list[[i]]$Corresponding_caliper_measurement_date)
+            } else {
+                warning("The column: 'Corresponding_caliper_measurement_date' was not found in the", i, "element of the uCT data list.",
+                        "\n  Assuming that all caliper measurements correspond with the uCT measurements, the standard Date column will be used.")
+                
+                #Assign the dates to the proper list
+                corresponding_dates[[i]] <- unique(clean_uCT_data_output_list[[i]]$Date)
+                
+            }
+        }
+
+
+
+
+    #The main outer for loop which traverses the caliper measurement list
+    for (i in seq_along(read_caliper_data_output_list)) {
+        
+        #An inner for loop which traverses the corresponding dates list
+        for (e in seq_along(corresponding_dates)) {
+            
+            #The innermost loop which grabs the appropriate dates from the caliper measurements dataframes and assigns them to the temporary dataframe
+            for (item in corresponding_dates[[e]]) {
+                
+                #Assign the date matched caliper measurements to the temp_df
+                temp_df <- read_caliper_data_output_list[[i]][grep(pattern = item, x = read_caliper_data_output_list[[i]]$Dates), ]
+                    
+                    #An if statement to check if rows were assigned
+                    if (nrow(temp_df) > 0) {
+                        
+                        #Assign the temp_df to the trimmed caliper list
+                        trimmed_caliper_list[[i]] <- temp_df
+                    }
+            }
+        }
+        
+    }
+
+    #Return the trimmed caliper list
+    return(trimmed_caliper_list)
+    
+}
+
+}
 ctrl_caliper <- list()
 temp_df <- data.frame()
 for (i in seq_len(length(caliper_measurements))) {

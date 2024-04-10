@@ -296,7 +296,7 @@ main = function(input_path = arguments$input_path, output_path = arguments$outpu
     message(paste0("\nThe data processing was successful! \n",
                     "Your processed data was saved to:\n",
                     output_path, "\n",
-                    "with the name: ", output_name, "\n"))
+                    "with the name: ", "processed", "_", output_name, "\n"))
     
 }
 
