@@ -189,6 +189,9 @@ read_caliper_data = function(data_path = intermediate_IO) {
 
     }
 
+    #Name the elements of the caliper_measurements list based on the original processed I/O files
+    names(caliper_measurements) <- processed_caliper_file_names
+
     #Return the caliper_measurement list
     return(caliper_measurements)
     
@@ -267,24 +270,15 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
         
     }
 
+    #Name the elements of the caliper_measurement_list base on which treatment group they belong (use the uCT data as reference)
+
+
+
     #Return the trimmed caliper list
     return(trimmed_caliper_list)
     
 }
 
-}
-ctrl_caliper <- list()
-temp_df <- data.frame()
-for (i in seq_len(length(caliper_measurements))) {
-    for (e in seq_len(length(unique(uCT_volumes$Date_calip)))) {
-        temp_df <- caliper_measurements[[i]][grep(pattern = unique(uCT_volumes$Date_calip)[e], x = caliper_measurements[[i]]$Dates), ]
-        if (nrow(temp_df) > 0) {
-        ctrl_caliper[[i]] <- temp_df
-
-    }
-    }
-    
-}
 
 
 # Trim the caliper measurements to all the uCT entries based on mouse ID
