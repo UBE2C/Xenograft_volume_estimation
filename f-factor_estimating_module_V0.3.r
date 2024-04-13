@@ -217,15 +217,29 @@ read_caliper_data = function(data_path = intermediate_IO) {
 # Trim the caliper measurements to all the uCT entries based on date
 # This function will process the caliper measurements to fit the dates and samples recorded in the uCT measurements
 fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_data_output_list) {
+    ##Define the variables used by this function
+    
     #Initialize a list onto which the trimmed down caliper measurements will be added
     trimmed_caliper_list <- list()
     
     #Initialize a temporary dataframe on which the processing can take place
     temp_df <- data.frame()
 
-    #initialize a list onto which the unique dates of the corresponding caliper measurements will be added
+    #Initialize a list onto which the unique dates of the corresponding caliper measurements will be added
     corresponding_dates <- vector(mode = "list", length = length(clean_uCT_data_output_list))
 
+    #Define the treatment group_IDs shared by both uCT and caliper_measurement files
+    group_IDs <- vector(mode = "list", length = length(clean_uCT_data_output_list))
+
+    for (i in seq_along(clean_uCT_data_output_list)) {
+        group_IDs[[i]] <- unique(clean_uCT_data_output_list[[i]]$Treatment_group_ID)
+    }
+    
+
+    ##Start the processing steps
+
+    #First, trim the caliper measurements by date to match the uCT measurements
+    
     #A for loop which traverses the clean uCT measurement list to assign the corresponding dates to the proper list
     for (i in seq_along(clean_uCT_data_output_list)) {
             
@@ -244,9 +258,6 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
             }
         }
 
-
-
-
     #The main outer for loop which traverses the caliper measurement list
     for (i in seq_along(read_caliper_data_output_list)) {
         
@@ -258,26 +269,70 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
                 
                 #Assign the date matched caliper measurements to the temp_df
                 temp_df <- read_caliper_data_output_list[[i]][grep(pattern = item, x = read_caliper_data_output_list[[i]]$Dates), ]
-                    
+                temp_df_name <- names(read_caliper_data_output_list)[i]
                     #An if statement to check if rows were assigned
                     if (nrow(temp_df) > 0) {
                         
                         #Assign the temp_df to the trimmed caliper list
                         trimmed_caliper_list[[i]] <- temp_df
+                        names(trimmed_caliper_list)[[i]] <- temp_df_name
                     }
             }
         }
         
     }
 
-    #Name the elements of the caliper_measurement_list base on which treatment group they belong (use the uCT data as reference)
+    #Second, trim the caliper measurements by experimental group and subject to match the uCT measurements
+    #Further subset the trimmed_caliper_list elements based on the sample names of the uCT measurements
+    #NOTE: this is a complicated loop system so I will add extra annotation to facilitate better understanding
 
+    #The outermost loop which traverses the uCT data based on which we are subsetting, this will provide the uct and the group_ID list index (as they are supposed to be the same)
+    for (i in seq_along(clean_uCT_data_output_list)) {
+        
+        #The first inner loop which traverses the group_IDs list. The unique shared IDs should be stored here for the grep function
+        #this will allow to select the right list element(i) and the right identifier for that uCT ID vector (e)
+        for (e in seq_along(group_IDs[[i]])) {
+            
+            #The innermost loop which traverses the trimmed_caliper_measurements list. The name of each list element should contain the 
+            #shared IDs so the grep function can identify in which list element the given ID can be found.
+            for (df_i in seq_along(trimmed_caliper_list)) {
+                
+                #An if statement ensuring that if the given ID is not found in the name of the caliper list element
+                #the loop does not break but jumps to the next element
+                if (grepl(pattern = group_IDs[[i]][[e]], x = names(trimmed_caliper_list))[df_i]) {
+                    
+                    #The actual part responsible for the dataframe splitting.Consist of two main pieces -
+                    #- Piece 1-
+                    #clean_uCT_data_output_list[[i]]$Mouse_ID[grep(pattern = group_IDs[[i]][[e]], x = clean_uCT_data_output_list[[i]]$Treatment_group_ID)]
+                    #This piece will look for the shared ID in the uCT data shared ID column, and uses the returned row indexes to subset the uCT dataframe's
+                    #mouse ID column into the matching mouse IDs
+                    #- Piece 2-
+                    #trimmed_caliper_list[[df_i]][, -Piece 1-]
+                    #This piece will simply split the trimmed caliper measurement dataframes down to the selected columns, returned by -Piece 1-
+                    trimmed_caliper_list[[df_i]] <- trimmed_caliper_list[[df_i]][, clean_uCT_data_output_list[[i]]$Mouse_ID[grep(pattern = group_IDs[[i]][[e]], x = clean_uCT_data_output_list[[i]]$Treatment_group_ID)]]
+                } else {
+                    next
+                }
+            }
+            
+        }
+        
+    }
 
 
     #Return the trimmed caliper list
     return(trimmed_caliper_list)
     
 }
+
+
+
+
+
+
+
+
+
 
 
 
