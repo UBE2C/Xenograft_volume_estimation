@@ -224,9 +224,11 @@ process_data = function(data_list, verbose) {
     #Add the rownames as a new column so that they will be saved when the data is written into new .csv files
     processed_data_lst[[1]] <- dplyr::mutate(.data = processed_data_lst[[1]],
                                         Dates = rownames(processed_data_lst[[1]]),
+                                        Treatment_group_ID = "G1",
                                         .before = colnames(processed_data_lst[[1]])[1])
     processed_data_lst[[2]] <- dplyr::mutate(.data = processed_data_lst[[2]],
                                         Dates = rownames(processed_data_lst[[2]]),
+                                        Treatment_group_ID = "G2",
                                         .before = colnames(processed_data_lst[[2]])[1])
 
     #An if statement controlling how much information the function should return if verbose is TRUE
