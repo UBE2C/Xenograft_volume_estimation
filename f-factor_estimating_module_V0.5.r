@@ -469,13 +469,220 @@ is_data_normal = function(calculate_f_constants_output_list) {
 }
 
 
+## Non-parametric outlier test - Numeric outlier test (this seems to be the more safe alternative as it is a standard test)
+remove_outlier_f_const_nonparam = function(non_normal_list_element) {
+    ## Declare a list to modify
+    list_element_to_modify <- non_normal_list_element
+
+    # Declare the output list
+    f_constant_outlier_free_measurements <- data.frame(matrix(nrow = nrow(list_element_to_modify), ncol = ncol(list_element_to_modify)))
+
+    ## Declare variables
+
+    # Declare the quartile variables
+    Q1 <- vector(mode = "numeric", length = 1)
+    Q3 <- vector(mode = "numeric", length = 1)
+
+    # Declare a vector for the IQR - inter quartile range
+    IQR <- vector(mode = "numeric", length = 1)
+
+    # Declare vectors containing the upper and lower boundaries
+    upper_boundary <- vector(mode = "numeric", length = 1)
+    lower_boundary <- vector(mode = "numeric", length = 1)
+
+    # Declare vectors for the upper and lower outliers
+    upper_outlier <- vector(mode = "numeric")
+    lower_outlier <- vector(mode = "numeric")
+
+    # Order the constants in am ascending order
+    ordered_constants <- list_element_to_modify$f_constants[order(list_element_to_modify$f_constants)]
+
+
+    # Calculate the quartile ranges and allocate them to the appropriate list elements
+    Q1 <- quantile(ordered_constants, 0.25, na.rm = TRUE)
+    Q3 <- quantile(ordered_constants, 0.75, na.rm = TRUE)
+
+    # Calculate the IQR 
+    IQR <- Q3 - Q1
+
+    # Calculate the upper and lower boundaries
+    upper_boundary <- Q3 + (1.5 * IQR)
+    lower_boundary <- Q1 - (1.5 * IQR)
+
+    if (lower_boundary < 0) {
+        lower_boundary <- 0
+    }
+
+    # Identify the upper outliers
+    upper_outlier <- ordered_constants[ordered_constants > upper_boundary]
+
+    # Identify the lower outliers
+    lower_outlier <- ordered_constants[ordered_constants < lower_boundary]
+        
+    # An if statement to check if there were any upper outliers and if yes to remove them
+    if (length(upper_outlier) == 0) {
+        message("No outlier found on the right (upper) tail for input list element.")
+    } else {
+        message("The following elements are outliers on the right (upper) tail, and will be removed: \n", upper_outlier)
+            
+        #Remove the upper outliers
+        list_element_to_modify <- list_element_to_modify[!list_element_to_modify$f_constants %in% upper_outlier, ]
+    }
+
+    # An if statement to check if there were any lower outliers and if yes to remove them
+    if (length(lower_outlier) == 0) {
+        message("No outlier found on the left (lower) tail for input list element.")
+    } else {
+        message("The following elements are outliers on the left (lower) tail, and will be removed: \n", lower_outlier)
+
+        #Remove the lower outliers
+        list_element_to_modify <- list_element_to_modify[!list_element_to_modify$f_constants %in% lower_outlier, ]
+    }
 
 
 
-## Remove the outliers and calculate the mean
+    # Assign the f-constant outlier free list element to the output list
+    f_constant_outlier_free_measurements <- list_element_to_modify
+
+    # Return the output list
+    return(f_constant_outlier_free_measurements)
+    
+}
 
 
-# Remove the outliers using Grubb's test (part of the outlier package) (parametric test!)
+
+
+## Modified z-score test (non-parametric) - this test is basically the Grubb's test, just with the median and MAD instead of mean and SD
+## The ida was taken from the following publication - DOI: (https://doi.org/10.1515/dema-2021-0041), however the publication used the SD with the median
+## and not the MAD
+modified_Zscore_test = function(non_normal_list_element, left_tail = TRUE) {
+    
+    
+    ## Define function variables
+
+    # Define the f_constant vector for sorting
+    ordered_f_constants <- vector(mode = "numeric", length = nrow(non_normal_list_element))
+    
+    # Define the median f-constant
+    f_const_median <- vector(mode = "numeric", length = 1)
+
+    # Define the median absolute deviation (MAD)
+    f_const_mad <- vector(mode = "numeric", length = 1)
+
+    # Define a vector for the z-scores
+    z_scores <- vector(mode = "numeric", length = nrow(non_normal_list_element))
+
+    # Define a vector for the minimum z-score
+    min_z_score <- vector(mode = "numeric", length = 1)
+
+    # Define a vector for the maximum z-score
+    max_z_score <- vector(mode = "numeric", length = 1)
+
+    # Define the critical z-value
+    crit_z <- vector(mode = "numeric", length = 1)
+
+    # Max outlier identity
+    max_outlier_ident <- vector(mode = "numeric", length = 1)
+
+    # Max outlier index
+    max_outlier_index <- vector(mode = "numeric", length = 1)
+
+    # Min outlier identity
+    min_outlier_ident <- vector(mode = "numeric", length = 1)
+
+    # Min outlier index
+    min_outlier_index <- vector(mode = "numeric", length = 1)
+
+    # Define a return_list
+    return_list <- list("outlier_identity" = NULL, "outlier_row_index" = NULL)
+
+    ## Calculate the defined variables
+
+    # Assign and sort the f_constants
+    ordered_f_constants <- non_normal_list_element$f_constants[order(non_normal_list_element$f_constants)]
+
+    # Calculate the median of the f-constants
+    f_const_median <- median(ordered_f_constants, na.rm = TRUE)
+
+    # Calculate the MAD
+    f_const_mad <- mad(x = non_normal_list_element$f_constants, na.rm = TRUE)
+
+    # Calculate the minimum z-score
+    min_z_score <- (f_const_median - min(non_normal_list_element$f_constants)) / f_const_mad
+
+    # Calculate all the z-scores
+    for (i in seq_along(non_normal_list_element$f_constants)) {
+        z_scores[i] <- abs((non_normal_list_element$f_constants[i] - f_const_median) / f_const_mad)
+    
+    }
+
+    # Calculate the maximum z-score
+    max_z_score <- (max(non_normal_list_element$f_constants) - f_const_median) / f_const_mad
+
+    # Calculate the critical z-score
+    crit_z <- (nrow(non_normal_list_element) - 1) / sqrt(nrow(non_normal_list_element))
+
+
+    ## Compare to critical value
+    
+    # An if statement to control on which tail the outlier was identified
+    if (left_tail == TRUE) {
+        message("Identifying the lowest outlier on the left tail.")
+        
+        # An if statement to determine if there is an outlier
+        if (min_z_score > crit_z) {
+            
+            # Assign the outlier identity and index
+            min_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% min_z_score]
+            min_outlier_index <- match(x = min_outlier_ident, non_normal_list_element$f_constants)
+
+            message("The following minimum value was found to be an outlier: ", min_outlier_ident, "\n", "at the following row index: ", min_outlier_index)
+            
+            # Assign the identity and index to the return list
+            return_list[[1]] <- min_outlier_ident
+            return_list[[2]] <- min_outlier_index
+
+            # Return the output list
+            return(return_list)
+            
+        } else {
+            message("No lower outlier have been identified.")
+        }
+
+
+    } else {
+        message("Identifying the highest outlier on the right tail.")
+        
+        # An if statement to determine if there is an outlier
+        if (max_z_score > crit_z) {
+            
+            # Assign the outlier identity and index
+            max_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% max_z_score]
+            max_outlier_index <- match(x = max_outlier_ident, non_normal_list_element$f_constants)
+
+            message("The following maximum value was found to be an outlier: ", max_outlier_ident, "\n", "at the following row index: ", max_outlier_index)
+            
+            # Assign the identity and index to the return list
+            return_list[[1]] <- max_outlier_ident
+            return_list[[2]] <- max_outlier_index
+
+            # Return the output list
+            return(return_list)
+            
+        } else {
+            message("No upper outlier have been identified.")
+        }
+
+
+    }
+
+}
+
+
+
+
+
+## Remove the outliers using Grubb's test (part of the outlier package) (parametric test!)
 full_calc_f_values <- unified_df$calc_f
 
 for (i in seq_len(length(full_calc_f_values))) {
@@ -510,6 +717,66 @@ for (i in seq_len(length(full_calc_f_values))) {
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+for (index in seq_along(is_data_normal_output_list)) {
+    if (is_data_normal_output_list[[index]]$p.value < 0.05) {
+        message("It seems your f-constants show a non-normal distribution. A non-parametric test will be used for outlier detection and removal.")
+
+       calculate_f_constants_output_list[[index]] <- remove_outlier_f_const_nonparam(calculate_f_constants_output_list = f[[index]])
+    }
+}
+
+
+
+
+
+
+
+## Remove the outliers using Grubb's test (part of the outlier package) (parametric test!)
+full_calc_f_values <- unified_df$calc_f
+
+for (i in seq_len(length(full_calc_f_values))) {
+    grubbs_res_lower <- outliers::grubbs.test(full_calc_f_values)
+
+    if (grubbs_res_lower$p.value < 0.05) {
+        lower_outlier <- stringr::str_extract(grubbs_res_lower$alternative, "[0-9]+\\.[0-9]+")
+        match_l_indices <- grep(pattern = lower_outlier, x = as.character(full_calc_f_values))
+        
+        if (length(match_l_indices) > 0) {
+            message("The following lower outliers will be removed: ", match_l_indices)
+            full_calc_f_values <- full_calc_f_values[-match_l_indices]
+        }
+    } else {
+        message("No significant outlier found on the left tail.")
+
+    }
+
+    grubbs_res_upper <- outliers::grubbs.test(full_calc_f_values, opposite = TRUE)
+
+    if (grubbs_res_upper$p.value < 0.05) {
+        upper_outlier <- stringr::str_extract(grubbs_res_upper$alternative, "[0-9]+\\.[0-9]+")
+        match_u_indices <- grep(pattern = upper_outlier, x = as.character(full_calc_f_values))
+        
+        if (length(match_u_indices) > 0) {
+            message("The following lower outliers will be removed: ", match_u_indices)
+            full_calc_f_values <- full_calc_f_values[-match_u_indices]
+        }
+    } else {
+        message("No significant outlier found on the right tail.")
+
+    }
+
+}
+
 
 
 
