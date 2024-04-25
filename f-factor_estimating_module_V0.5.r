@@ -24,7 +24,7 @@
 
 
 # The list of required packages
-CRAN_packages <- c("tidyverse", "optparse", "this.path", "outliers")
+CRAN_packages <- c("tidyverse", "optparse", "this.path", "outliers", "ggpubr")
 
 
 # A function to check and install packages
@@ -376,6 +376,8 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
         
         #Assign the column bound dataframes to the bound_df_list
         bound_df_list[[i]] <- cbind(shrinking_list[[1]], shrinking_list[[no_of_dates]])
+        
+        #Shrink the caliper measurement df list by the elements bound beforehand
         shrinking_list <- shrinking_list[- c(1, no_of_dates)]
     
     }
@@ -397,16 +399,75 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
 }
 
 
+################################################# Section end #################################################
+
+
+
+
+
+################################################    MARK: f-constant    #################################################
+                                                #  calculation and eval #
+
+
+
+
 ## Calculate the f-constants to each uCT-measurement-caliper measurement group
 
 # This function calculates the f-constant for the used uCT measurement set
 calculate_f_constants = function(bind_and_unify_measurements_output_list) {
     
+
+    ##Define the variables used in the function
+
+    #Assign the bind_and_unify_measurements_output_list to a variable which will be returned
+    measurements_with_f_constants_list <- bind_and_unify_measurements_output_list
+
+    #This outer loop traverses the unified measurement dfs list
+    for (i in seq_along(bind_and_unify_measurements_output_list)) {
+        
+        #This inner loop traverses the unified dataframes themselves and adds a new column "f_constant" and fills it with the
+        #calculated f-constants to each sample
+        for (e in seq_len(nrow(bind_and_unify_measurements_output_list[[i]]))) {
+            measurements_with_f_constants_list[[i]]$f_constants[e] <- bind_and_unify_measurements_output_list[[i]]$Tumor_volume_.mm3.[e] / ((pi / 6) * (bind_and_unify_measurements_output_list[[i]]$L[e] * bind_and_unify_measurements_output_list[[i]]$W[e])^(3 / 2))
+
+        }
+    }
+
+    #Return the output list containing the f-constants
+    return(measurements_with_f_constants_list)
 }
-for (i in seq_len(nrow(unified_df))) {
-    unified_df$calc_f[i] <- unified_df$Tumor.volume..mm3.[i] / ((pi / 6) * (unified_df$L[i] * unified_df$W[i])^(3 / 2))
+
+
+################################################# Section end #################################################
+
+
+
+
+
+################################################      MARK: Outlier calculation      #################################################
+                                                #  and removal among the f-constants #
+# MARK: CONTINUE FROM HERE
+
+
+
+## Determine if the data is normally distributed
+is_data_normal = function(calculate_f_constants_output_list) {
+    
+    ## Declare dynamic variables
+    shapiro_results <- vector(mode = "list", length = length(calculate_f_constants_output_list))
+
+    ## Do the normality test
+
+    # This for loop will carry out a Shapiro-Wilk normality test
+    for (i in seq_along(calculate_f_constants_output_list)) {
+        shapiro_results[[i]] <- shapiro.test(calculate_f_constants_output_list[[i]]$f_constants)
+    }
+
+    # Return the shapiro test results list
+    return(shapiro_results)
 
 }
+
 
 
 
@@ -414,7 +475,7 @@ for (i in seq_len(nrow(unified_df))) {
 ## Remove the outliers and calculate the mean
 
 
-# Remove the outliers using Grubb's test (part of the outlier package)
+# Remove the outliers using Grubb's test (part of the outlier package) (parametric test!)
 full_calc_f_values <- unified_df$calc_f
 
 for (i in seq_len(length(full_calc_f_values))) {
@@ -449,6 +510,95 @@ for (i in seq_len(length(full_calc_f_values))) {
     }
 
 }
+
+
+
+
+## Non-parametric outlier test - Numeric outlier test
+remove_outlier_f_const_nonparam = function(calculate_f_constants_output_list) {
+    ## Declare a list to modify
+    list_to_modify <- calculate_f_constants_output_list
+
+    # Declare the output list
+    f_constant_outlier_free_measurements <- vector(mode = "list", length = length(list_to_modify))
+
+    ## Carry out the calculations, outlier identification and removal for each input list element
+    for (list_i in seq_along(list_to_modify)) {
+        ## Declare dynamic variables
+
+        # Declare the quartile variables
+        Q1 <- vector(mode = "numeric", length = 1)
+        Q3 <- vector(mode = "numeric", length = 1)
+
+        # Declare a vector for the IQR - inter quartile range
+        IQR <- vector(mode = "numeric", length = 1)
+
+        # Declare vectors containing the upper and lower boundaries
+        upper_boundary <- vector(mode = "numeric", length = 1)
+        lower_boundary <- vector(mode = "numeric", length = 1)
+
+        # Declare vectors for the upper and lower outliers
+        upper_outlier <- vector(mode = "numeric")
+        lower_outlier <- vector(mode = "numeric")
+
+        # Order the constants in am ascending order
+        ordered_constants <- list_to_modify[[list_i]]$f_constants[order(list_to_modify[[list_i]]$f_constants)]
+
+
+        # Calculate the quartile ranges and allocate them to the appropriate list elements
+        Q1 <- quantile(ordered_constants, 0.25, na.rm = TRUE)
+        Q3 <- quantile(ordered_constants, 0.75, na.rm = TRUE)
+
+        # Calculate the IQR 
+        IQR <- Q3 - Q1
+
+        # Calculate the upper and lower boundaries
+        upper_boundary <- Q3 + (1.5 * IQR)
+        lower_boundary <- Q1 - (1.5 * IQR)
+
+        if (lower_boundary < 0) {
+            lower_boundary <- 0
+        }
+
+        # Identify the upper outliers
+        upper_outlier <- ordered_constants[ordered_constants > upper_boundary]
+
+        # Identify the lower outliers
+        lower_outlier <- ordered_constants[ordered_constants < lower_boundary]
+        
+        # An if statement to check if there were any upper outliers and if yes to remove them
+        if (length(upper_outlier) == 0) {
+            message("No outlier found on the right (upper) tail for input list element: ", list_i)
+        } else {
+            message("The following elements are outliers on the right (upper) tail, and will be removed: \n", upper_outlier)
+            
+            #Remove the upper outliers
+            list_to_modify[[list_i]] <- list_to_modify[[list_i]][!list_to_modify[[list_i]]$f_constants %in% upper_outlier, ]
+        }
+
+        # An if statement to check if there were any lower outliers and if yes to remove them
+        if (length(lower_outlier) == 0) {
+            message("No outlier found on the left (lower) tail for input list element: ", list_i)
+        } else {
+            message("The following elements are outliers on the left (lower) tail, and will be removed: \n", lower_outlier)
+
+            #Remove the lower outliers
+            list_to_modify[[list_i]] <- list_to_modify[[list_i]][!list_to_modify[[list_i]]$f_constants %in% lower_outlier, ]
+        }
+
+    }
+
+    # Assign the f-constant outlier free list element to the output list
+    f_constant_outlier_free_measurements <- list_to_modify
+
+    # Return the output list
+    return(f_constant_outlier_free_measurements)
+    
+}
+
+
+
+
 
 
 # Calculate the mean f and re-estimate the tumor volumes with the mean_f for the full ctrl set
