@@ -80,6 +80,58 @@ intermediate_IO <- paste0(script_dir_path, "/", "Intermediate_IO")
 
 
 
+################################################# MARK: CLI arguments #################################################
+                                                #                     #
+
+
+## Define the default output path and file names
+def_output_path <- paste0(script_dir_path, "/", "Intermediate_IO")
+def_output_name <- "not_defined_yet"
+
+
+
+## Add command line arguments
+options_list <- list(
+    optparse::make_option(opt_str = c("-p", "--input_path"), action = "store", type = "character", default = script_dir_path,
+    help = "This argument takes a character string which defines the path to the input .csv files ready to be processed. \n
+    By default the script sets the local directory as path."),
+
+    optparse::make_option(opt_str = c("-o", "--output_path"), action = "store", type = "character", default = def_output_path,
+    help = "This argument takes a character string which defines the output path to the output .csv files after processing. \n
+    By default the path is called Intermediate_IO, which is a directory found under the local directory."),
+
+    optparse::make_option(opt_str = c("-n", "--output_name"), action = "store", type = "character", default = def_output_name,
+    help = "This argument takes a character string which defines the name of the output .csv files. \n
+    By default the script sets the name to processed_output_table."),
+
+    optparse::make_option(opt_str = c("-v", "--verbose"), action = "store_true", default = FALSE, dest = "verbose",
+    help = "This argument controls if the program returns additional information like the outputs of the sub-functions, messages and warnings. \n
+    By default the option is set to FALSE."),
+
+    optparse::make_option(opt_str = c("-np", "--nonparam_test")),
+
+    optparse::make_option(opt_str = c("-ol", "--outlier_handling"))
+
+)
+
+# Create a program description
+prog_descr <- c(paste0(
+                "For a standalone run use the 'Rscript COMIX-data_processer_V[option] [optional args]' syntax."))
+
+# Parse the arguments to the arguments variable
+arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = options_list, 
+                                    description = prog_descr),
+                                    args = commandArgs(trailingOnly = TRUE),
+                                    print_help_and_exit = TRUE,
+                                    positional_arguments = FALSE,
+                                    convert_hyphens_to_underscores = FALSE)
+
+
+################################################# Section end #################################################
+
+
+
+
 
 ################################################# MARK: Data reading #################################################
                                                 #   and management   #
