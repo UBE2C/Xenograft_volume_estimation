@@ -110,7 +110,9 @@ options_list <- list(
 
     optparse::make_option(opt_str = c("-np", "--nonparam_test"), default = "numeric_outlier_test"),
 
-    optparse::make_option(opt_str = c("-ol", "--outlier_handling"), default = "detect")
+    optparse::make_option(opt_str = c("-ol", "--outlier_handling"), default = "detect"),
+
+    optparse::make_option(opt_str = c("-cr", "--correction"))
 
 )
 
@@ -1222,11 +1224,11 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_output_list, nonparam_test = "numeric_outlier_test") {
     for (index in seq_along(is_data_normal_output_list)) {
         if (is_data_normal_output_list[[index]]$p.value < 0.05) {
-            message("It seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection and removal.")
+            message("It seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection and removal. \n")
 
             if (nonparam_test == "numeric_outlier_test") {
                 for (e in seq_along(calculate_f_constants_output_list)) {
-                    calculate_f_constants_output_list[[e]] <- remove_outlier_f_const_nonparam(calculate_f_constants_output_list[[e]])
+                    calculate_f_constants_output_list[[e]] <- remove_outlier_f_const_NOTest(calculate_f_constants_output_list[[e]])
 
                 }
 
@@ -1236,7 +1238,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
                 while_loop_run <- TRUE
                 while (while_loop_run == TRUE) {
                     for (i in seq_along(calculate_f_constants_output_list)) {
-                        result <- modified_Zscore_test(calculate_f_constants_output_list[[i]], left_tail = TRUE)
+                        result <- remove_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[i]], left_tail = TRUE)
                         calculate_f_constants_output_list[[i]] <- result[[1]]
                         while_loop_run <- result[[2]]  # Update while_loop_run based on outliers_found
                     }
@@ -1245,7 +1247,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
                 while_loop_run <- TRUE
                 while (while_loop_run == TRUE) {
                     for (i in seq_along(calculate_f_constants_output_list)) {
-                        result <- modified_Zscore_test(calculate_f_constants_output_list[[i]], left_tail = FALSE)
+                        result <- remove_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[i]], left_tail = FALSE)
                         calculate_f_constants_output_list[[i]] <- result[[1]]
                         while_loop_run <- result[[2]]  # Update while_loop_run based on outliers_found
                     }
@@ -1256,12 +1258,12 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
 
         } else {
-            message("It seems your f-constants show a normal distribution. A parametric Grubbs test will be used for outlier detection and removal.")
+            message("It seems your f-constants show a normal distribution. A parametric Grubbs test will be used for outlier detection and removal. \n")
 
             while_loop_run <- TRUE
                 while (while_loop_run == TRUE) {
                     for (i in seq_along(calculate_f_constants_output_list)) {
-                        result <- remove_outlier_f_const_param(calculate_f_constants_output_list[[i]], left_tail = TRUE)
+                        result <- remove_outlier_f_const_Grubbs(calculate_f_constants_output_list[[i]], left_tail = TRUE)
                         calculate_f_constants_output_list[[i]] <- result[[1]]
                         while_loop_run <- result[[2]]  # Update while_loop_run based on outliers_found
                     }
@@ -1270,7 +1272,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
                 while_loop_run <- TRUE
                 while (while_loop_run == TRUE) {
                     for (i in seq_along(calculate_f_constants_output_list)) {
-                        result <- remove_outlier_f_const_param(calculate_f_constants_output_list[[i]], left_tail = FALSE)
+                        result <- remove_outlier_f_const_Grubbs(calculate_f_constants_output_list[[i]], left_tail = FALSE)
                         calculate_f_constants_output_list[[i]] <- result[[1]]
                         while_loop_run <- result[[2]]  # Update while_loop_run based on outliers_found
                     }
@@ -1305,7 +1307,7 @@ outlier_detector = function(calculate_f_constants_output_list, is_data_normal_ou
         
         # This if statement checks if the f-factor distribution is normal
         if (is_data_normal_output_list[[index]]$p.value < 0.05) {
-            message("It seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection and removal.")
+            message("It seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection. \n")
         
             # This if statement is responsible for choosing a non-parametric test
             if (nonparam_test == "numeric_outlier_test") {
@@ -1331,7 +1333,7 @@ outlier_detector = function(calculate_f_constants_output_list, is_data_normal_ou
             }
         
         } else {
-            message("It seems your f-constants show a normal distribution. A parametric Grubbs test will be used for outlier detection and removal.")
+            message("It seems your f-constants show a normal distribution. A parametric Grubbs test will be used for outlier detection. \n")
 
             # Doing the outlier test on the left tail with Grubbs test
             for (i in seq_along(calculate_f_constants_output_list)) {
