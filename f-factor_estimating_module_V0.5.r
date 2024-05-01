@@ -24,7 +24,7 @@
 
 
 # The list of required packages
-CRAN_packages <- c("tidyverse", "optparse", "this.path", "outliers")
+CRAN_packages <- c("tidyverse", "optparse", "this.path", "outliers", "ggpubr")
 
 
 # A function to check and install packages
@@ -262,15 +262,18 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
                 corresponding_dates[[i]] <- unique(clean_uCT_data_output_list[[i]]$Date)
                 
             }
-        }
+    }
+    
+    #Assign the corresponding_dates to the parent main() environment
+    assign("corresponding_dates_main", corresponding_dates, envir = parent.frame())
 
-    #The main outer for loop which traverses the caliper measurement list
+    #The main outer for loop which traverses the corresponding dates list
     for (i in seq_along(corresponding_dates)) {
         
-        #An inner for loop which traverses the corresponding dates list
+        #An inner for loop which traverses the elements inside corresponding dates list
         for (e in seq_along(corresponding_dates[[i]])) {
             
-            #The innermost loop which grabs the appropriate dates from the caliper measurements dataframes and assigns them to the temporary dataframe
+            #The innermost loop which traverse the caliper measurements list 
             for (df_i in seq_along(read_caliper_data_output_list)) {
                 
                 #Assign the date matched caliper measurements to the temp_df
@@ -279,7 +282,7 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
                     #An if statement to check if rows were assigned
                     if (nrow(temp_df) > 0) {
                         
-                        #Assign the temp_df to the trimmed caliper list
+                        #Append the trimmed caliper list with the temp_df 
                         trimmed_caliper_list <- append(x = trimmed_caliper_list, values = list(temp_df))
                         
                     }
@@ -334,96 +337,352 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
         
     }
 
-
     #Return the trimmed caliper list
     return(trimmed_caliper_list)
     
 }
 
+#Bind the trimmed caliper measurement dataframes together by columns (animal IDs) and create a clean unified df using the uCT measurement dfs
+#This function will carry out the column bind and organizes the dataframes according to the uCT measurements list, then creates a list of unified dataframes
+#using the selected column of the cuCT measurements and the transposed bound caliper measurements
+bind_and_unify_measurements = function(fit_caliper_measurements_output_list, clean_uCT_data_output_list) {
+    
+    
+    ##Define the variables used in the function
 
-#MARK: Loop test
-#BUG. Thi part should be re-visited as because of this the function will return the wrong number
-#Second, trim the caliper measurements by experimental group and subject to match the uCT measurements
-    #Further subset the trimmed_caliper_list elements based on the sample names of the uCT measurements
-    #NOTE: this is a complicated loop system so I will add extra annotation to facilitate better understanding
+    #Assign the trimmed_caliper_measurement list to a variable which will be trimmed progressively
+    shrinking_list <- list()
+    shrinking_list <- fit_caliper_measurements_output_list
 
-for (i in seq_along(b)) {
-        group_IDs[[i]] <- unique(b[[i]]$Treatment_group_ID)
+    #Initialize a new list which will contain the column bound dataframes. Each element will correspond to the
+    #elements of the uCT measurements list
+    bound_df_list <- list()
+
+    #Initialize an empty vector to store the number of dates in each corresponding date element
+    no_of_dates <- vector(mode = "numeric")
+
+    #Initialize a unified dataframe list, which will unify the bound caliper measurements and selected columns from the clean_uCT_list
+    unified_df_list <- list()
+
+
+    ##Start the processing steps
+
+    #This for loop will traverse the corresponding dates list. The length of each element will correspond to the number of dataframes 
+    #the trimmed_caliper_measurements list has, so they can be grouped based on the uCT files
+    for (i in seq_along(corresponding_dates_main)) {
+        
+        #Assign the length of the corresponding date list element
+        no_of_dates <- length(corresponding_dates_main[[i]])
+        
+        #Assign the column bound dataframes to the bound_df_list
+        bound_df_list[[i]] <- cbind(shrinking_list[[1]], shrinking_list[[no_of_dates]])
+        
+        #Shrink the caliper measurement df list by the elements bound beforehand
+        shrinking_list <- shrinking_list[- c(1, no_of_dates)]
+    
     }
+
+    #Set the rownames of the new dataframes
+    for (i in seq_along(bound_df_list)){
+        rownames(bound_df_list[[i]]) <- c("L", "W")
+    }
+
+    #Unify the bound caliper measurements and selected columns from the clean_uCT_list
+    for (i in seq_along(clean_uCT_data_output_list)) {
+        unified_df_list[[i]] <- cbind(clean_uCT_data_output_list[[i]][, c("Date", "Mouse_ID", "Tumor_volume_.mm3.")], t(bound_df_list[[i]]))
+    }
+
+
+    #Return the bound_df_list
+    return(unified_df_list)
+
+}
+
+
+################################################# Section end #################################################
+
+
+
+
+
+################################################    MARK: f-constant    #################################################
+                                                #  calculation and eval #
+
+
+
+
+## Calculate the f-constants to each uCT-measurement-caliper measurement group
+
+# This function calculates the f-constant for the used uCT measurement set
+calculate_f_constants = function(bind_and_unify_measurements_output_list) {
     
 
+    ##Define the variables used in the function
 
-    #The outermost loop which traverses the uCT data based on which we are subsetting, this will provide the uct and the group_ID list index (as they are supposed to be the same)
-    for (i in seq_along(b)) {
+    #Assign the bind_and_unify_measurements_output_list to a variable which will be returned
+    measurements_with_f_constants_list <- bind_and_unify_measurements_output_list
+
+    #This outer loop traverses the unified measurement dfs list
+    for (i in seq_along(bind_and_unify_measurements_output_list)) {
         
-        #The first inner loop which traverses the group_IDs list. The unique shared IDs should be stored here for the grep function
-        #this will allow to select the right list element(i) and the right identifier for that uCT ID vector (e)
-        for (e in seq_along(group_IDs[[i]])) {
-            
-            #The innermost loop which traverses the trimmed_caliper_measurements list. The name of each list element should contain the 
-            #shared IDs so the grep function can identify in which list element the given ID can be found.
-            for (df_e in seq_along(test_lst)) {
-                
-                #An if statement ensuring that if the given ID is not found in the name of the caliper list element
-                #the loop does not break but jumps to the next element
-                if (is.element(el = "Treatment_group_ID", set = colnames(test_lst[[df_e]]))) {
-                    if (grepl(pattern = group_IDs[[i]][[e]], x = unique(test_lst[[df_e]]$Treatment_group_ID))) {
-                    
-                        #The actual part responsible for the dataframe splitting.Consist of two main pieces -
-                        #- Piece 1-
-                        #clean_uCT_data_output_list[[i]]$Mouse_ID[grep(pattern = group_IDs[[i]][[e]], x = clean_uCT_data_output_list[[i]]$Treatment_group_ID)]
-                        #This piece will look for the shared ID in the uCT data shared ID column, and uses the returned row indexes to subset the uCT dataframe's
-                        #mouse ID column into the matching mouse IDs
-                        #- Piece 2-
-                        #trimmed_caliper_list[[df_i]][, -Piece 1-]
-                        #This piece will simply split the trimmed caliper measurement dataframes down to the selected columns, returned by -Piece 1-
-                        test_lst[[df_e]] <- test_lst[[df_e]][, b[[i]]$Mouse_ID[grep(pattern = group_IDs[[i]][[e]], x = b[[i]]$Treatment_group_ID)]]
-                    } else {
-                        next
-                    }
-                } else {
-                    next
-                }
-                
-            }
-            
+        #This inner loop traverses the unified dataframes themselves and adds a new column "f_constant" and fills it with the
+        #calculated f-constants to each sample
+        for (e in seq_len(nrow(bind_and_unify_measurements_output_list[[i]]))) {
+            measurements_with_f_constants_list[[i]]$f_constants[e] <- bind_and_unify_measurements_output_list[[i]]$Tumor_volume_.mm3.[e] / ((pi / 6) * (bind_and_unify_measurements_output_list[[i]]$L[e] * bind_and_unify_measurements_output_list[[i]]$W[e])^(3 / 2))
+
         }
+    }
+
+    #Return the output list containing the f-constants
+    return(measurements_with_f_constants_list)
+}
+
+
+################################################# Section end #################################################
+
+
+
+
+
+################################################      MARK: Outlier calculation      #################################################
+                                                #  and removal among the f-constants #
+# MARK: CONTINUE FROM HERE
+
+
+
+## Determine if the data is normally distributed
+is_data_normal = function(calculate_f_constants_output_list) {
+    
+    ## Declare dynamic variables
+    shapiro_results <- vector(mode = "list", length = length(calculate_f_constants_output_list))
+
+    ## Do the normality test
+
+    # This for loop will carry out a Shapiro-Wilk normality test
+    for (i in seq_along(calculate_f_constants_output_list)) {
+        shapiro_results[[i]] <- shapiro.test(calculate_f_constants_output_list[[i]]$f_constants)
+    }
+
+    # Return the shapiro test results list
+    return(shapiro_results)
+
+}
+
+
+## Non-parametric outlier test - Numeric outlier test (this seems to be the more safe alternative as it is a standard test)
+remove_outlier_f_const_nonparam = function(non_normal_list_element) {
+    ## Declare a list to modify
+    list_element_to_modify <- non_normal_list_element
+
+    # Declare the output list
+    f_constant_outlier_free_measurements <- data.frame(matrix(nrow = nrow(list_element_to_modify), ncol = ncol(list_element_to_modify)))
+
+    ## Declare variables
+
+    # Declare the quartile variables
+    Q1 <- vector(mode = "numeric", length = 1)
+    Q3 <- vector(mode = "numeric", length = 1)
+
+    # Declare a vector for the IQR - inter quartile range
+    IQR <- vector(mode = "numeric", length = 1)
+
+    # Declare vectors containing the upper and lower boundaries
+    upper_boundary <- vector(mode = "numeric", length = 1)
+    lower_boundary <- vector(mode = "numeric", length = 1)
+
+    # Declare vectors for the upper and lower outliers
+    upper_outlier <- vector(mode = "numeric")
+    lower_outlier <- vector(mode = "numeric")
+
+    # Order the constants in am ascending order
+    ordered_constants <- list_element_to_modify$f_constants[order(list_element_to_modify$f_constants)]
+
+
+    # Calculate the quartile ranges and allocate them to the appropriate list elements
+    Q1 <- quantile(ordered_constants, 0.25, na.rm = TRUE)
+    Q3 <- quantile(ordered_constants, 0.75, na.rm = TRUE)
+
+    # Calculate the IQR 
+    IQR <- Q3 - Q1
+
+    # Calculate the upper and lower boundaries
+    upper_boundary <- Q3 + (1.5 * IQR)
+    lower_boundary <- Q1 - (1.5 * IQR)
+
+    if (lower_boundary < 0) {
+        lower_boundary <- 0
+    }
+
+    # Identify the upper outliers
+    upper_outlier <- ordered_constants[ordered_constants > upper_boundary]
+
+    # Identify the lower outliers
+    lower_outlier <- ordered_constants[ordered_constants < lower_boundary]
         
+    # An if statement to check if there were any upper outliers and if yes to remove them
+    if (length(upper_outlier) == 0) {
+        message("No outlier found on the right (upper) tail for input list element.")
+    } else {
+        message("The following elements are outliers on the right (upper) tail, and will be removed: \n", upper_outlier)
+            
+        #Remove the upper outliers
+        list_element_to_modify <- list_element_to_modify[!list_element_to_modify$f_constants %in% upper_outlier, ]
+    }
+
+    # An if statement to check if there were any lower outliers and if yes to remove them
+    if (length(lower_outlier) == 0) {
+        message("No outlier found on the left (lower) tail for input list element.")
+    } else {
+        message("The following elements are outliers on the left (lower) tail, and will be removed: \n", lower_outlier)
+
+        #Remove the lower outliers
+        list_element_to_modify <- list_element_to_modify[!list_element_to_modify$f_constants %in% lower_outlier, ]
     }
 
 
 
+    # Assign the f-constant outlier free list element to the output list
+    f_constant_outlier_free_measurements <- list_element_to_modify
+
+    # Return the output list
+    return(f_constant_outlier_free_measurements)
+    
+}
 
 
 
 
+## Modified z-score test (non-parametric) - this test is basically the Grubb's test, just with the median and MAD instead of mean and SD
+## The ida was taken from the following publication - DOI: (https://doi.org/10.1515/dema-2021-0041), however the publication used the SD with the median
+## and not the MAD
+modified_Zscore_test = function(non_normal_list_element, left_tail = TRUE) {
+    
+    
+    ## Define function variables
+
+    # Define the f_constant vector for sorting
+    ordered_f_constants <- vector(mode = "numeric", length = nrow(non_normal_list_element))
+    
+    # Define the median f-constant
+    f_const_median <- vector(mode = "numeric", length = 1)
+
+    # Define the median absolute deviation (MAD)
+    f_const_mad <- vector(mode = "numeric", length = 1)
+
+    # Define a vector for the z-scores
+    z_scores <- vector(mode = "numeric", length = nrow(non_normal_list_element))
+
+    # Define a vector for the minimum z-score
+    min_z_score <- vector(mode = "numeric", length = 1)
+
+    # Define a vector for the maximum z-score
+    max_z_score <- vector(mode = "numeric", length = 1)
+
+    # Define the critical z-value
+    crit_z <- vector(mode = "numeric", length = 1)
+
+    # Max outlier identity
+    max_outlier_ident <- vector(mode = "numeric", length = 1)
+
+    # Max outlier index
+    max_outlier_index <- vector(mode = "numeric", length = 1)
+
+    # Min outlier identity
+    min_outlier_ident <- vector(mode = "numeric", length = 1)
+
+    # Min outlier index
+    min_outlier_index <- vector(mode = "numeric", length = 1)
+
+    # Define a return_list
+    return_list <- list("outlier_identity" = NULL, "outlier_row_index" = NULL)
+
+    ## Calculate the defined variables
+
+    # Assign and sort the f_constants
+    ordered_f_constants <- non_normal_list_element$f_constants[order(non_normal_list_element$f_constants)]
+
+    # Calculate the median of the f-constants
+    f_const_median <- median(ordered_f_constants, na.rm = TRUE)
+
+    # Calculate the MAD
+    f_const_mad <- mad(x = non_normal_list_element$f_constants, na.rm = TRUE)
+
+    # Calculate the minimum z-score
+    min_z_score <- (f_const_median - min(non_normal_list_element$f_constants)) / f_const_mad
+
+    # Calculate all the z-scores
+    for (i in seq_along(non_normal_list_element$f_constants)) {
+        z_scores[i] <- abs((non_normal_list_element$f_constants[i] - f_const_median) / f_const_mad)
+    
+    }
+
+    # Calculate the maximum z-score
+    max_z_score <- (max(non_normal_list_element$f_constants) - f_const_median) / f_const_mad
+
+    # Calculate the critical z-score
+    crit_z <- (nrow(non_normal_list_element) - 1) / sqrt(nrow(non_normal_list_element))
 
 
+    ## Compare to critical value
+    
+    # An if statement to control on which tail the outlier was identified
+    if (left_tail == TRUE) {
+        message("Identifying the lowest outlier on the left tail.")
+        
+        # An if statement to determine if there is an outlier
+        if (min_z_score > crit_z) {
+            
+            # Assign the outlier identity and index
+            min_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% min_z_score]
+            min_outlier_index <- match(x = min_outlier_ident, non_normal_list_element$f_constants)
+
+            message("The following minimum value was found to be an outlier: ", min_outlier_ident, "\n", "at the following row index: ", min_outlier_index)
+            
+            # Assign the identity and index to the return list
+            return_list[[1]] <- min_outlier_ident
+            return_list[[2]] <- min_outlier_index
+
+            # Return the output list
+            return(return_list)
+            
+        } else {
+            message("No lower outlier have been identified.")
+        }
 
 
-# Bind the two ctrl caliper DFs together
-ctrl_caliper_df <- data.frame()
-ctrl_caliper_df <- do.call(cbind, ctrl_caliper)
-rownames(ctrl_caliper_df) <- c("L", "W")
+    } else {
+        message("Identifying the highest outlier on the right tail.")
+        
+        # An if statement to determine if there is an outlier
+        if (max_z_score > crit_z) {
+            
+            # Assign the outlier identity and index
+            max_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% max_z_score]
+            max_outlier_index <- match(x = max_outlier_ident, non_normal_list_element$f_constants)
+
+            message("The following maximum value was found to be an outlier: ", max_outlier_ident, "\n", "at the following row index: ", max_outlier_index)
+            
+            # Assign the identity and index to the return list
+            return_list[[1]] <- max_outlier_ident
+            return_list[[2]] <- max_outlier_index
+
+            # Return the output list
+            return(return_list)
+            
+        } else {
+            message("No upper outlier have been identified.")
+        }
 
 
-# Create a unified DF
-unified_df <- cbind(uCT_volumes[, c(5, 2, 4)], t(ctrl_caliper_df))
-
-
-# Calculate the f for the full used ctrl set
-for (i in seq_len(nrow(unified_df))) {
-    unified_df$calc_f[i] <- unified_df$Tumor.volume..mm3.[i] / ((pi / 6) * (unified_df$L[i] * unified_df$W[i])^(3 / 2))
+    }
 
 }
 
 
 
 
-## Remove the outliers and calculate the mean
 
-
-# Remove the outliers using Grubb's test (part of the outlier package)
+## Remove the outliers using Grubb's test (part of the outlier package) (parametric test!)
 full_calc_f_values <- unified_df$calc_f
 
 for (i in seq_len(length(full_calc_f_values))) {
@@ -458,6 +717,155 @@ for (i in seq_len(length(full_calc_f_values))) {
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+for (index in seq_along(is_data_normal_output_list)) {
+    if (is_data_normal_output_list[[index]]$p.value < 0.05) {
+        message("It seems your f-constants show a non-normal distribution. A non-parametric test will be used for outlier detection and removal.")
+
+       calculate_f_constants_output_list[[index]] <- remove_outlier_f_const_nonparam(calculate_f_constants_output_list = f[[index]])
+    }
+}
+
+
+
+
+
+
+
+## Remove the outliers using Grubb's test (part of the outlier package) (parametric test!)
+full_calc_f_values <- unified_df$calc_f
+
+for (i in seq_len(length(full_calc_f_values))) {
+    grubbs_res_lower <- outliers::grubbs.test(full_calc_f_values)
+
+    if (grubbs_res_lower$p.value < 0.05) {
+        lower_outlier <- stringr::str_extract(grubbs_res_lower$alternative, "[0-9]+\\.[0-9]+")
+        match_l_indices <- grep(pattern = lower_outlier, x = as.character(full_calc_f_values))
+        
+        if (length(match_l_indices) > 0) {
+            message("The following lower outliers will be removed: ", match_l_indices)
+            full_calc_f_values <- full_calc_f_values[-match_l_indices]
+        }
+    } else {
+        message("No significant outlier found on the left tail.")
+
+    }
+
+    grubbs_res_upper <- outliers::grubbs.test(full_calc_f_values, opposite = TRUE)
+
+    if (grubbs_res_upper$p.value < 0.05) {
+        upper_outlier <- stringr::str_extract(grubbs_res_upper$alternative, "[0-9]+\\.[0-9]+")
+        match_u_indices <- grep(pattern = upper_outlier, x = as.character(full_calc_f_values))
+        
+        if (length(match_u_indices) > 0) {
+            message("The following lower outliers will be removed: ", match_u_indices)
+            full_calc_f_values <- full_calc_f_values[-match_u_indices]
+        }
+    } else {
+        message("No significant outlier found on the right tail.")
+
+    }
+
+}
+
+
+
+
+
+## Non-parametric outlier test - Numeric outlier test
+remove_outlier_f_const_nonparam = function(calculate_f_constants_output_list) {
+    ## Declare a list to modify
+    list_to_modify <- calculate_f_constants_output_list
+
+    # Declare the output list
+    f_constant_outlier_free_measurements <- vector(mode = "list", length = length(list_to_modify))
+
+    ## Carry out the calculations, outlier identification and removal for each input list element
+    for (list_i in seq_along(list_to_modify)) {
+        ## Declare dynamic variables
+
+        # Declare the quartile variables
+        Q1 <- vector(mode = "numeric", length = 1)
+        Q3 <- vector(mode = "numeric", length = 1)
+
+        # Declare a vector for the IQR - inter quartile range
+        IQR <- vector(mode = "numeric", length = 1)
+
+        # Declare vectors containing the upper and lower boundaries
+        upper_boundary <- vector(mode = "numeric", length = 1)
+        lower_boundary <- vector(mode = "numeric", length = 1)
+
+        # Declare vectors for the upper and lower outliers
+        upper_outlier <- vector(mode = "numeric")
+        lower_outlier <- vector(mode = "numeric")
+
+        # Order the constants in am ascending order
+        ordered_constants <- list_to_modify[[list_i]]$f_constants[order(list_to_modify[[list_i]]$f_constants)]
+
+
+        # Calculate the quartile ranges and allocate them to the appropriate list elements
+        Q1 <- quantile(ordered_constants, 0.25, na.rm = TRUE)
+        Q3 <- quantile(ordered_constants, 0.75, na.rm = TRUE)
+
+        # Calculate the IQR 
+        IQR <- Q3 - Q1
+
+        # Calculate the upper and lower boundaries
+        upper_boundary <- Q3 + (1.5 * IQR)
+        lower_boundary <- Q1 - (1.5 * IQR)
+
+        if (lower_boundary < 0) {
+            lower_boundary <- 0
+        }
+
+        # Identify the upper outliers
+        upper_outlier <- ordered_constants[ordered_constants > upper_boundary]
+
+        # Identify the lower outliers
+        lower_outlier <- ordered_constants[ordered_constants < lower_boundary]
+        
+        # An if statement to check if there were any upper outliers and if yes to remove them
+        if (length(upper_outlier) == 0) {
+            message("No outlier found on the right (upper) tail for input list element: ", list_i)
+        } else {
+            message("The following elements are outliers on the right (upper) tail, and will be removed: \n", upper_outlier)
+            
+            #Remove the upper outliers
+            list_to_modify[[list_i]] <- list_to_modify[[list_i]][!list_to_modify[[list_i]]$f_constants %in% upper_outlier, ]
+        }
+
+        # An if statement to check if there were any lower outliers and if yes to remove them
+        if (length(lower_outlier) == 0) {
+            message("No outlier found on the left (lower) tail for input list element: ", list_i)
+        } else {
+            message("The following elements are outliers on the left (lower) tail, and will be removed: \n", lower_outlier)
+
+            #Remove the lower outliers
+            list_to_modify[[list_i]] <- list_to_modify[[list_i]][!list_to_modify[[list_i]]$f_constants %in% lower_outlier, ]
+        }
+
+    }
+
+    # Assign the f-constant outlier free list element to the output list
+    f_constant_outlier_free_measurements <- list_to_modify
+
+    # Return the output list
+    return(f_constant_outlier_free_measurements)
+    
+}
+
+
+
+
 
 
 # Calculate the mean f and re-estimate the tumor volumes with the mean_f for the full ctrl set
