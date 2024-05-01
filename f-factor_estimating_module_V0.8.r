@@ -1285,6 +1285,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
 
 
+
 ## This a wrapper function which binds the 3 outlier detection functions together
 outlier_detector = function(calculate_f_constants_output_list, is_data_normal_output_list, nonparam_test = "numeric_outlier_test", left_tail = TRUE) {
     ## Declare variables
