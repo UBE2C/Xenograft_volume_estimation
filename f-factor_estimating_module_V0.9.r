@@ -69,10 +69,63 @@ package_loader = function(packages = CRAN_packages) {
 script_dir_path <- this.path::here()
 setwd(script_dir_path)
 
+# Define the prefered input directory path
+pref_input_path <- paste0(script_dir_path, "/", "Input_files")
 
 # Define the path to the intermediate input/output file directory
 intermediate_IO <- paste0(script_dir_path, "/", "Intermediate_IO")
 
+# Define the final output directory path
+pref_output_path <- paste0(script_dir_path, "/", "Output_files")
+
+
+
+# Define the input directory path
+def_input_path <- script_dir_path
+
+# Define the path to the intermediate input/output file directory
+def_intermediate_IO <- script_dir_path
+
+# Define the final output directory path
+def_output_path <- script_dir_path
+
+
+# Directory management function
+# This function will look for the prefered input and output libraries and will create them if they are missing upon user request
+dir_management = function(input_1 = NULL) {
+    ##Define the function variables
+    
+    #Declare a vector containing the preferred directory paths
+    dir_pths <- c(pref_input_path, intermediate_IO, pref_output_path)
+    
+    #This for loop will traverse the directory paths vector to feed the paths to the if statement below
+    for (path in dir_pths) {
+        
+        #The main if statement which will check if a directory exists
+        if (!dir.exists(path)) {
+            message("The following directory does not exists but is recommended for better organization: ", path, "\n",
+                "would you like to create it? \n",
+                "1: Yes \n",
+                "2: No \n",
+                "(select a number)")
+            
+            #The scan function will stop execution and will wait for user input, then it will set the value of
+            #the input_1 variable based on user input
+            input_1 <- scan(file = "stdin", what = numeric(), n = 1, quiet = TRUE)
+
+            #An inner if statement to control the next steps based on user input
+            if (input_1 == 1) {
+                dir.create(path)
+
+                message("The requested directories were successfully created!")
+            } else {
+                message("The directory ", path, "was not requested. \n",
+                    "The default paths will be used")
+            }
+        }
+    }
+    
+}
 
 ################################################# Section end #################################################
 
@@ -95,6 +148,8 @@ options_list <- list(
     optparse::make_option(opt_str = c("-p", "--input_path"), action = "store", type = "character", default = script_dir_path,
     help = "This argument takes a character string which defines the path to the input .csv files ready to be processed. \n
     By default the script sets the local directory as path."),
+
+    optparse::make_option(opt_str = c("-io", "--intermediate_IO_path"), default = def_intermediate_IO)
 
     optparse::make_option(opt_str = c("-o", "--output_path"), action = "store", type = "character", default = def_output_path,
     help = "This argument takes a character string which defines the output path to the output .csv files after processing. \n
