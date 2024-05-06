@@ -8,3 +8,6 @@
 
 #Ignore VScode settings
 .vscode
+
+#Ignore test scripts
+IO_manager_test.r
