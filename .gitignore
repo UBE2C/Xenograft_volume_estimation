@@ -8,3 +8,7 @@
 
 #Ignore VScode settings
 .vscode
+
+#Ignore test files and functions
+#1. IO management test function
+IO_manager_test.r

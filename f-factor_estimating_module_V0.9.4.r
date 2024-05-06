@@ -502,9 +502,6 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
 
     #Initialize a list onto which the column trimmed down caliper measurements will be added
     col_trimmed_caliper_list <- list()
-
-    #Initialize a list onto which the grouped trimmed down caliper measurements will be added
-    grouped_trimmed_caliper_list <- list()
     
     #Initialize a temporary dataframe on which the processing can take place
     temp_df <- data.frame()
@@ -573,6 +570,7 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
         corresponding_dates[[i]] <- unlist(stringr::str_split(temp_date_list[[i]], pattern = "_"))
     }
 
+
     #This for loop converts char "NA"s to real NAs, removes these from the vectors and sorts out the unique dates
     for (i in seq_along(corresponding_dates)) {
         corresponding_dates[[i]] <- dplyr::na_if(x = corresponding_dates[[i]], y = "NA")
@@ -590,157 +588,20 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
         col_trimmed_caliper_list[[i]] <- trimmed_caliper_list[[i]][, c("Mouse_ID", "Treatment_group_ID", "Treatment")]
         
         #This for loop binds the LxW columns which correspond to the uCT measurements
-        for (e in seq_along(corresponding_dates)) {
-            col_trimmed_caliper_list[[i]] <- cbind(col_trimmed_caliper_list[[i]], dplyr::select(.data = trimmed_caliper_list[[i]], matches(corresponding_dates[[e]])))
+        for (e in seq_along(corresponding_dates[[i]])) {
+            col_trimmed_caliper_list[[i]] <- cbind(col_trimmed_caliper_list[[i]], trimmed_caliper_list[[i]][c(grep(pattern = corresponding_dates[[i]][[e]], x = colnames(trimmed_caliper_list[[i]])))])
         }
     }
     
     #Remove duplicated columns from the column trimmed list's dataframes
-    for (i in seq_along(col_trimmed_caliper_list)) {
-       col_trimmed_caliper_list[[i]] <- col_trimmed_caliper_list[[i]][, unique(colnames(col_trimmed_caliper_list[[i]]))] 
-    }
-
-    #Initialize a dynamic list onto which the grouping variables will be added
-    #grouping_list <- vector(mode = "list", length = 2)    
-
-    #Group the selected columns according to uCT groups
-    #for (i in seq_along(corresponding_dates)) {
-    #    grouping_list[[i]] <- dplyr::select(.data = temp_df, matches(corresponding_dates[[i]]))
+    #for (i in seq_along(col_trimmed_caliper_list)) {
+    #   col_trimmed_caliper_list[[i]] <- col_trimmed_caliper_list[[i]][, unique(colnames(col_trimmed_caliper_list[[i]]))] 
     #}
-    
 
-    
-    
+    #Return the the fully trimmed data as a list
     return(col_trimmed_caliper_list)
 
-    
 }
-
-
-#A for loop which traverses the clean uCT measurement list to assign the corresponding dates to the proper list
-    for (i in seq_along(clean_uCT_data_output_list)) {
-            
-            #An if statements which controls which date columns will be used for sample matching
-            if (is.element(el = "Corresponding_caliper_measurement_dates", set = colnames(x = clean_uCT_data_output_list[[i]]))) {
-                
-                #Assign the corresponding dates to the proper list
-                temp_date_list[[i]] <- unique(clean_uCT_data_output_list[[i]]$Corresponding_caliper_measurement_dates)
-            } else {
-                warning("The column: 'Corresponding_caliper_measurement_dates' was not found in the", i, "element of the uCT data list.",
-                        "\n  Assuming that all caliper measurements correspond with the uCT measurements, the standard miCT_dates column will be used.")
-                
-                #Assign the dates to the proper list
-                temp_date_list[[i]] <- unique(clean_uCT_data_output_list[[i]]$miCT_dates)
-                
-            }
-    }
-
-    #This for loop splits up the corresponding dates (separated by "_") and uses unlist to store them as vectors in a list
-    for (i in seq_along(temp_date_list)) {
-        corresponding_dates[[i]] <- unlist(stringr::str_split(temp_date_list[[i]], pattern = "_"))
-    }
-
-    #This for loop converts char "NA"s to real NAs, removes these from the vectors and sorts out the unique dates
-    for (i in seq_along(corresponding_dates)) {
-        corresponding_dates[[i]] <- dplyr::na_if(x = corresponding_dates[[i]], y = "NA")
-        corresponding_dates[[i]] <- corresponding_dates[[i]][!is.na(corresponding_dates[[i]])]
-        corresponding_dates[[i]] <- unique(corresponding_dates[[i]])
-    }
-
-    #Assign the corresponding_dates to the parent main() environment
-    assign("corresponding_dates_main", corresponding_dates, envir = parent.frame())
-
-    #Select the corresponding LxW measurements from the caliper measurements list to the uCT list
-    for (i in seq_along(read_caliper_data_output_list)) {
-        for (e in seq_along(corresponding_dates)) {
-            trimmed_caliper_list <- append(trimmed_caliper_list, dplyr::select(.data = read_caliper_data_output_list[[i]], matches(corresponding_dates[[e]])))
-        }
-    }
-
-    #Bind the trimmed caliper measurements columns bach into a dataframe for easier handling
-    temp_df <- as.data.frame(do.call(cbind, trimmed_caliper_list))
-    
-    #Remove duplicated columns from the temp dataframe
-    temp_df <- temp_df[, unique(colnames(temp_df))]
-
-    #Initialize a dynamic list onto which the grouping variables will be added
-    grouping_list <- vector(mode = "list", length = 2)    
-
-    #Group the selected columns according to uCT groups
-    for (i in seq_along(corresponding_dates)) {
-        grouping_list[[i]] <- dplyr::select(.data = temp_df, matches(corresponding_dates[[i]]))
-    }
-    
-
-
-
-
-
-for (i in seq_along(clean_uCT_list)) {
-        for (e in seq_along(calip_data)) {
-            print(calip_data[[e]][clean_uCT_list[[i]]$Mouse_ID %in% calip_data[[e]]$Mouse_ID, ])
-        }
-    }
-
-lst <- vector(mode = "list", length = 4)
-for (i in seq_along(calip_data)) {
-    for (e in seq_along(clean_uCT_list)){
-        print(calip_data[[i]][calip_data[[i]]$Mouse_ID %in% clean_uCT_list[[e]]$Mouse_ID, ])   
-    }
-}
-
-lst <- vector(mode = "list", length = length(calip_data))
-for (i in seq_along(calip_data)) {
-    for (e in seq_along(clean_uCT_list)){
-        # Only assign to lst[[i]] if it's the correct index
-        if (i == e) {
-            lst[[i]] <- calip_data[[i]][calip_data[[i]]$Mouse_ID %in% clean_uCT_list[[e]]$Mouse_ID, ]
-        }
-    }
-}
-
-
-result_list <- list()
-
-for (i in seq_along(calip_data)) {
-    result_list[[i]] <- list()  # Initialize the sublist for each iteration
-    for (e in seq_along(clean_uCT_list)){
-        result_list[[i]][[e]] <- calip_data[[i]][calip_data[[i]]$Mouse_ID %in% clean_uCT_list[[e]]$Mouse_ID, ]
-    }
-}
-
-dplyr::filter(calip_data[[1]], calip_data[[1]]$Mouse_ID %in% clean_uCT_list[[1]]$Mouse_ID)
-
-
-
-
-
-
-calip_data[[1]][calip_data[[1]]$Mouse_ID %in% clean_uCT_list[[1]]$Mouse_ID, ]
-calip_data[[1]][calip_data[[1]]$Mouse_ID %in% clean_uCT_list[[2]]$Mouse_ID, ]
-calip_data[[2]][calip_data[[2]]$Mouse_ID %in% clean_uCT_list[[1]]$Mouse_ID, ]
-calip_data[[2]][calip_data[[2]]$Mouse_ID %in% clean_uCT_list[[2]]$Mouse_ID, ]
-
-
-calip_data[[1]][calip_data[[1]]$Mouse_ID %in% clean_uCT_list[[1]]$Mouse_ID, ]
-calip_data[[2]][calip_data[[2]]$Mouse_ID %in% clean_uCT_list[[1]]$Mouse_ID, ]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #Bind the trimmed caliper measurement dataframes together by columns (animal IDs) and create a clean unified df using the uCT measurement dfs
@@ -752,15 +613,8 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
     ##Define the variables used in the function
 
     #Assign the trimmed_caliper_measurement list to a variable which will be trimmed progressively
-    shrinking_list <- list()
-    shrinking_list <- fit_caliper_measurements_output_list
-
-    #Initialize a new list which will contain the column bound dataframes. Each element will correspond to the
-    #elements of the uCT measurements list
-    bound_df_list <- list()
-
-    #Initialize an empty vector to store the number of dates in each corresponding date element
-    no_of_dates <- vector(mode = "numeric")
+    input_list <- vector(mode = "list", length = length(fit_caliper_measurements_output_list))
+    input_list <- fit_caliper_measurements_output_list
 
     #Initialize a unified dataframe list, which will unify the bound caliper measurements and selected columns from the clean_uCT_list
     unified_df_list <- list()
@@ -768,29 +622,10 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
 
     ##Start the processing steps
 
-    #This for loop will traverse the corresponding dates list. The length of each element will correspond to the number of dataframes 
-    #the trimmed_caliper_measurements list has, so they can be grouped based on the uCT files
-    for (i in seq_along(corresponding_dates_main)) {
-        
-        #Assign the length of the corresponding date list element
-        no_of_dates <- length(corresponding_dates_main[[i]])
-        
-        #Assign the column bound dataframes to the bound_df_list
-        bound_df_list[[i]] <- cbind(shrinking_list[[1]], shrinking_list[[no_of_dates]])
-        
-        #Shrink the caliper measurement df list by the elements bound beforehand
-        shrinking_list <- shrinking_list[- c(1, no_of_dates)]
     
-    }
-
-    #Set the rownames of the new dataframes
-    for (i in seq_along(bound_df_list)){
-        rownames(bound_df_list[[i]]) <- c("L", "W")
-    }
-
     #Unify the bound caliper measurements and selected columns from the clean_uCT_list
-    for (i in seq_along(clean_uCT_data_output_list)) {
-        unified_df_list[[i]] <- cbind(clean_uCT_data_output_list[[i]][, c("Date", "Mouse_ID", "Tumor_volume_.mm3.")], t(bound_df_list[[i]]))
+    for (i in seq_along(fit_caliper_measurements_output_list)) {
+        unified_df_list[[i]] <- cbind(fit_caliper_measurements_output_list[[i]], clean_uCT_data_output_list[[i]][, c(grep(pattern = "Volume", x = colnames(clean_uCT_data_output_list[[i]])))])
     }
 
 
@@ -819,7 +654,7 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
 # NOTE: formula solved to f f = V / (pi/6) * (l * w)^(3/2)
 
 
-# This function calculates the f-constant for the used uCT measurement set
+# This function calculates the sample mean f-constants based on a mean tumor volume form the uCTs and a mean caliper measurements from the LxW values
 calculate_f_constants = function(bind_and_unify_measurements_output_list) {
     
 
@@ -828,13 +663,47 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list) {
     #Assign the bind_and_unify_measurements_output_list to a variable which will be returned
     measurements_with_f_constants_list <- bind_and_unify_measurements_output_list
 
+    #Declare a vector for temporary Volume values
+    temp_V_values <- vector(mode = "numeric", length = 2)
+
+    #Declare a vector for the temporary mean volumes for calculating the f-constants
+    temp_V_mean <- vector(mode = "numeric", length = 1)
+
+    #Declare a vector for temporary LxW values
+    temp_LW_values <- vector(mode = "numeric")
+
+    #Declare a vector for the temporary mean LxW for calculating the f-constants
+    temp_LW_mean <- vector(mode = "numeric", length = 1)
+
+
     #This outer loop traverses the unified measurement dfs list
     for (i in seq_along(bind_and_unify_measurements_output_list)) {
         
         #This inner loop traverses the unified dataframes themselves and adds a new column "f_constant" and fills it with the
         #calculated f-constants to each sample
         for (e in seq_len(nrow(bind_and_unify_measurements_output_list[[i]]))) {
-            measurements_with_f_constants_list[[i]]$f_constants[e] <- bind_and_unify_measurements_output_list[[i]]$Tumor_volume_.mm3.[e] / ((pi / 6) * (bind_and_unify_measurements_output_list[[i]]$L[e] * bind_and_unify_measurements_output_list[[i]]$W[e])^(3 / 2))
+            
+            #Extract the values from the selected row and columns
+            temp_V_values <- as.numeric(unlist(bind_and_unify_measurements_output_list[[i]][e, c(grep(pattern = "Volume", x = colnames(bind_and_unify_measurements_output_list[[i]])))]))
+
+            #Calculate the mean, ignoring NA values
+            temp_V_mean <- mean(temp_V_values, na.rm = TRUE)
+
+            #Extract the values from the selected row and columns
+            temp_LW_values <- as.numeric(unlist(bind_and_unify_measurements_output_list[[i]][e, c(grep(pattern = "^LxW", x = colnames(bind_and_unify_measurements_output_list[[i]])))]))
+
+            #Calculate the mean, ignoring NA values
+            temp_LW_mean <- mean(temp_LW_values, na.rm = TRUE)
+            
+            #Assign the mean LW values to each sample
+            measurements_with_f_constants_list[[i]]$mean_LxW[e] <- temp_LW_mean
+
+            #Assign the mean Volume values to each sample
+            measurements_with_f_constants_list[[i]]$mean_Volume[e] <- temp_V_mean
+
+
+            #Calculate the sample mean f-constants to each sample
+            measurements_with_f_constants_list[[i]]$f_constants[e] <- temp_V_mean / ((pi / 6) * (temp_LW_mean)^(3 / 2))
 
         }
     }
@@ -1021,6 +890,9 @@ detect_outlier_f_const_NOTest = function(non_normal_list_element) {
 
     } else {
         message("The following elements are outliers on the right (upper) tail: \n", upper_outlier, "\n")
+
+        #Assign the outlier f-constants to the output list
+        outliers_list[[1]] <- upper_outlier
             
     }
 
@@ -1031,17 +903,16 @@ detect_outlier_f_const_NOTest = function(non_normal_list_element) {
     } else {
         message("The following elements are outliers on the left (lower) tail: \n", lower_outlier, "\n")
 
+        #Assign the outlier f-constants to the output list
+        outliers_list[[2]] <- lower_outlier
     }
 
+    if (length(upper_outlier) != 0 || length(lower_outlier != 0)) {
+        ##Return the output list
+        return(outliers_list)
 
-
-    #Assign the outlier f-constants to the output list
-    outliers_list[[1]] <- upper_outlier
-    outliers_list[[2]] <- lower_outlier
-
-
-    ##Return the output list
-    return(outliers_list)
+    }
+    
     
 }
 
@@ -1304,6 +1175,9 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
             #Name the output list elements
             names(output_list) <- c("left-tail outlier", "element index")
 
+            ##Return the output list
+            return(output_list)
+
         } else {
             message("No lower outlier have been identified. \n")
 
@@ -1329,6 +1203,9 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
             #Name the output list elements
             names(output_list) <- c("right-tail outlier", "element index")
 
+            ##Return the output list
+            return(output_list)
+
         } else {
             message("No upper outlier have been identified. \n")
 
@@ -1338,8 +1215,7 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     }
 
 
-    ##Return the output list
-    return(output_list)
+    
 
 }
 
@@ -1535,6 +1411,9 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 
                 #Name the output list elements
                 names(output_list) <- c("left-tail outlier", "element index")
+
+                #Return the output list
+                return(output_list)
                 
             }
 
@@ -1549,7 +1428,7 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
         #Assign the value of Grubbs test on the right tail
         grubbs_upper_res <- outliers::grubbs.test(f_constants)
 
-        #This if statement controls that if there is an outlier it should be identified and removed
+        #This if statement controls that if there is an outlier it should be identified
         if (grubbs_upper_res$p.value < 0.05) {
             
             # Assign outlier identity and index
@@ -1566,6 +1445,9 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 
                 #Name the output list elements
                 names(output_list) <- c("right-tail outlier", "element index")
+
+                #Return the output list
+                return(output_list)
                 
             }
 
@@ -1575,8 +1457,7 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
         }
     }
 
-    #Return the output list
-    return(output_list)
+    
     
 }
 
@@ -1790,7 +1671,7 @@ estimate_tumor_volume = function(calculate_f_constants_output_list, mean_f_value
         for (ind in seq_len(nrow(input_list[[index]]))) {
             
             #Estimate and assign the tumor volumes to each individual sample in the temp_df
-            temp_df$Estim_tumor_vol[ind] <- (pi / 6) * mean_f_values_list[[index]] * (temp_df$L[ind] * temp_df$W[ind])^(3 / 2)
+            temp_df$Estim_tumor_vol[ind] <- (pi / 6) * mean_f_values_list[[index]] * (temp_df$mean_LxW[ind])^(3 / 2)
         }
 
         #Assign the temp_df to the return list for each input list element
@@ -1894,7 +1775,7 @@ correct_tumor_vol = function(estimated_tumor_volume_list, mean_f_values_list) {
         for (ind in seq_along(below_mean_std_vals)) {
             filter_list[[ind]] <- dplyr::filter(temp_df, f_constants < below_mean_std_vals[ind] & f_constants > below_mean_std_vals[ind + 1])
             
-            below_mean_volumes[ind] <- sum(filter_list[[ind]]$Estim_tumor_vol) / sum(filter_list[[ind]]$Tumor_volume_.mm3.)
+            below_mean_volumes[ind] <- sum(filter_list[[ind]]$Estim_tumor_vol) / sum(filter_list[[ind]]$mean_Volume)
             
         }
 
@@ -1903,7 +1784,7 @@ correct_tumor_vol = function(estimated_tumor_volume_list, mean_f_values_list) {
         for (ind in seq_along(above_mean_std_vals)) {
             filter_list[[ind]] <- dplyr::filter(temp_df, f_constants > above_mean_std_vals[ind] & f_constants < above_mean_std_vals[ind + 1])
             
-            above_mean_volumes[ind] <- sum(filter_list[[ind]]$Estim_tumor_vol) / sum(filter_list[[ind]]$Tumor_volume_.mm3.)
+            above_mean_volumes[ind] <- sum(filter_list[[ind]]$Estim_tumor_vol) / sum(filter_list[[ind]]$mean_Volume)
             
         }
 

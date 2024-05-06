@@ -338,7 +338,7 @@ process_data = function(data_list, verbose) {
         #Add the rownames as a new column so that they will be saved when the data is written into new .csv files
         processed_data_lst[[index]] <- dplyr::mutate(.data = processed_data_lst[[index]],
                                         Mouse_ID = data_list[[index]]$Mouse.ID,
-                                        Treatment_group_ID = "G1",
+                                        Treatment_group_ID = paste0("G", index),
                                         Treatment = data_list[[index]]$Treatment,
                                         .before = 1)
 
