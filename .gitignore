@@ -11,3 +11,11 @@
 
 #Ignore test scripts
 IO_manager_test.r
+
+
+#Ignore directories
+Backup_folders/
+Input_files/
+Intermediate_IO/
+Output_files/
+Raw_input_files/
