@@ -1,5 +1,6 @@
 # Ignore the data files
 *.csv
+*.png
 
 
 #Ignore macOS setting files
@@ -11,6 +12,11 @@
 
 #Ignore test scripts
 IO_manager_test.r
+plotting_test.r
+
+#Ignore actual COMIX scripts
+COMIX_xenograft_volume_plotting.r
+COMIX_aggregate_plots_with_SEM.r
 
 
 #Ignore directories
