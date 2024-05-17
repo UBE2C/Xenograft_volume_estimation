@@ -1,5 +1,8 @@
 # Ignore the data files
 *.csv
+*.png
+*.numbers
+*.zip
 
 
 #Ignore macOS setting files
@@ -9,6 +12,18 @@
 #Ignore VScode settings
 .vscode
 
-#Ignore test files and functions
-#1. IO management test function
+#Ignore test scripts
 IO_manager_test.r
+plotting_test.r
+
+#Ignore actual COMIX scripts
+COMIX_xenograft_volume_plotting.r
+COMIX_aggregate_plots_with_SEM.r
+
+
+#Ignore directories
+Backup_folders/
+Input_files/
+Intermediate_IO/
+Output_files/
+Raw_input_files/
