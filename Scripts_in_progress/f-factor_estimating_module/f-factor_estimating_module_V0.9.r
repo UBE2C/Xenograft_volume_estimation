@@ -69,9 +69,93 @@ package_loader = function(packages = CRAN_packages) {
 script_dir_path <- this.path::here()
 setwd(script_dir_path)
 
+# Define the preferred input directory path
+pref_input_path <- paste0(script_dir_path, "/", "Input_files")
+
+# Define the preferred path to the intermediate input/output file directory
+pref_intermediate_IO <- paste0(script_dir_path, "/", "Intermediate_IO")
+
+# Define the preferred final output directory path
+pref_output_path <- paste0(script_dir_path, "/", "Output_files")
+
+
+
+# Define the input directory path
+def_input_path <- script_dir_path
 
 # Define the path to the intermediate input/output file directory
-intermediate_IO <- paste0(script_dir_path, "/", "Intermediate_IO")
+def_intermediate_IO <- script_dir_path
+
+# Define the final output directory path
+def_output_path <- script_dir_path
+
+
+# Directory management function
+# This function will look for the preferred input and output libraries and will create them if they are missing upon user request
+dir_management = function(input_1 = NULL, input_2 = NULL) {
+    ##Define the function variables
+    
+    #Declare a vector containing the preferred directory paths
+    dir_paths <- c(pref_input_path, pref_intermediate_IO, pref_output_path)
+    
+    #This for loop will traverse the directory paths vector to feed the paths to the if statement below
+    for (path in dir_paths) {
+        
+        #The main if statement which will check if a directory exists
+        if (!dir.exists(path)) {
+            message("The following directory does not exists but is recommended for better organization: ", path, "\n",
+                "would you like to create it? \n",
+                "1: Yes \n",
+                "2: No \n",
+                "(select a number)")
+            
+            #The scan function will stop execution and will wait for user input, then it will set the value of
+            #the input_1 variable based on user input
+            input_1 <- scan(file = "stdin", what = numeric(), n = 1, quiet = TRUE)
+
+            #An inner if statement to control the next steps based on user input
+            if (input_1 == 1) {
+                dir.create(path)
+
+                message("The requested directories were successfully created!")
+            } else {
+                message("The directory ", path, "was not requested. \n",
+                    "The default paths will be used")
+            }
+        }
+    }
+
+    #An if statement to offer the user to re-organize the input files
+    if (input_1 == 1) {
+        message("Now that you created the new directories would like to stop and place the input files in the proper directories? \n",
+            "1: Yes \n",
+            "2: No \n",
+            "(select a number)")
+
+        input_2 <- scan(file = "stdin", what = numeric(), n = 1, quiet = TRUE)
+    }
+
+    #An if statement to stop execution if the user choses so
+    if (input_2 == 1) {
+        quit(save = "no")
+
+    } else {
+        message("You choose to continue. Please note the default input/output path is the script directory itself.")
+    }
+
+    #An if statement to set the the default input and output paths to the preferred ones if they exists
+    if (dir.exists(dir_paths[1]) == TRUE & dir.exists(dir_paths[2]) == TRUE & dir.exists(dir_paths[3]) == TRUE) {
+        # Define the input directory path
+        def_input_path <- pref_input_path
+
+        # Define the path to the intermediate input/output file directory
+        def_intermediate_IO <- pref_intermediate_IO
+
+        # Define the final output directory path
+        def_output_path <- pref_output_path
+    }
+    
+}
 
 
 ################################################# Section end #################################################
@@ -84,8 +168,7 @@ intermediate_IO <- paste0(script_dir_path, "/", "Intermediate_IO")
                                                 #                     #
 
 
-## Define the default output path and file names
-def_output_path <- paste0(script_dir_path, "/", "Intermediate_IO")
+## Define the default output file names
 def_output_name <- "not_defined_yet"
 
 
@@ -95,6 +178,8 @@ options_list <- list(
     optparse::make_option(opt_str = c("-p", "--input_path"), action = "store", type = "character", default = script_dir_path,
     help = "This argument takes a character string which defines the path to the input .csv files ready to be processed. \n
     By default the script sets the local directory as path."),
+
+    optparse::make_option(opt_str = c("-io", "--intermediate_IO_path"), default = def_intermediate_IO),
 
     optparse::make_option(opt_str = c("-o", "--output_path"), action = "store", type = "character", default = def_output_path,
     help = "This argument takes a character string which defines the output path to the output .csv files after processing. \n
@@ -107,6 +192,8 @@ options_list <- list(
     optparse::make_option(opt_str = c("-v", "--verbose"), action = "store_true", default = FALSE, dest = "verbose",
     help = "This argument controls if the program returns additional information like the outputs of the sub-functions, messages and warnings. \n
     By default the option is set to FALSE."),
+
+    optparse::make_option(opt_str = c("-q", "--quiet"), action = "store_true", default = FALSE, dest = "quiet"),
 
     optparse::make_option(opt_str = c("-np", "--nonparam_test"), default = "numeric_outlier_test"),
 
@@ -146,7 +233,7 @@ arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = 
 
 
 # This function loads the uCT data from the intermediate I/O folder for further processing
-read_uCT_data = function(data_path = intermediate_IO) {
+read_uCT_data = function(data_path = def_intermediate_IO) {
     #Initialize a list onto which the uCT data will be added
     uCT_measurements <- list()
     
@@ -224,7 +311,7 @@ clean_uCT_data = function(read_uCT_output_list) {
 
 
 # This function loads the cleaned output files from the Data-processer module
-read_caliper_data = function(data_path = intermediate_IO) {
+read_caliper_data = function(data_path = def_intermediate_IO) {
     #Initialize a list onto which the caliper measurements will be added
     caliper_measurements <- list()
 
@@ -395,6 +482,7 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
     return(trimmed_caliper_list)
     
 }
+
 
 #Bind the trimmed caliper measurement dataframes together by columns (animal IDs) and create a clean unified df using the uCT measurement dfs
 #This function will carry out the column bind and organizes the dataframes according to the uCT measurements list, then creates a list of unified dataframes
@@ -736,7 +824,7 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     max_z_score <- vector(mode = "numeric", length = 1)
 
     #Define the critical z-value
-    crit_z <- vector(mode = "numeric", length = 1)
+    crit_t <- vector(mode = "numeric", length = 1)
 
     #Max outlier identity
     upper_outlier_ident <- vector(mode = "numeric", length = 1)
@@ -749,6 +837,9 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
 
     #Min outlier index
     min_outlier_index <- vector(mode = "numeric", length = 1)
+
+    #Define the degrees of freedom
+    deg_of_f <- vector(mode = "numeric", length = 1)
 
     #Variable to track if no outliers are found
     while_loop_run <- TRUE
@@ -780,8 +871,11 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     #Calculate the maximum z-score
     max_z_score <- (max(non_normal_list_element$f_constants) - f_const_median) / f_const_mad
 
-    #Calculate the critical z-score
-    crit_z <- (nrow(non_normal_list_element) - 1) / sqrt(nrow(non_normal_list_element))
+    #Calculate the degrees of freedom
+    deg_of_f <- nrow(non_normal_list_element) - 1
+
+    #Calculate the critical value of t
+    crit_t <- qt(1 - 0.05 / 2, deg_of_f)
 
 
     ##Compare to critical value
@@ -791,7 +885,7 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
         message("Identifying the lowest outlier on the left tail...")
         
         #An if statement to determine if there is an outlier
-        if (min_z_score > crit_z) {
+        if (min_z_score > crit_t) {
             
             #Assign the outlier identity and index
             lower_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% min_z_score]
@@ -817,7 +911,7 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
         message("Identifying the highest outlier on the right tail...")
         
         #An if statement to determine if there is an outlier
-        if (max_z_score > crit_z) {
+        if (max_z_score > crit_t) {
             
             #Assign the outlier identity and index
             upper_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% max_z_score]
@@ -881,7 +975,7 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     max_z_score <- vector(mode = "numeric", length = 1)
 
     #Define the critical z-value
-    crit_z <- vector(mode = "numeric", length = 1)
+    crit_t <- vector(mode = "numeric", length = 1)
 
     #Max outlier identity
     upper_outlier_ident <- vector(mode = "numeric", length = 1)
@@ -894,6 +988,9 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
 
     #Min outlier index
     lower_outlier_index <- vector(mode = "numeric", length = 1)
+
+    #Define the degrees of freedom
+    deg_of_f <- vector(mode = "numeric", length = 1)
 
 
     ##Calculate the defined variables
@@ -919,8 +1016,11 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     #Calculate the maximum z-score
     max_z_score <- (max(non_normal_list_element$f_constants) - f_const_median) / f_const_mad
 
-    #Calculate the critical z-score
-    crit_z <- (nrow(non_normal_list_element) - 1) / sqrt(nrow(non_normal_list_element))
+    #Calculate the degrees of freedom
+    deg_of_f <- nrow(non_normal_list_element) - 1
+
+    #Calculate the critical value of t
+    crit_t <- qt(1 - 0.05 / 2, deg_of_f)
 
 
     ##Compare to critical value
@@ -930,7 +1030,7 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
         message("Identifying the lowest outlier on the left tail...")
         
         #An if statement to determine if there is an outlier
-        if (min_z_score > crit_z) {
+        if (min_z_score > crit_t) {
             
             #Assign the outlier identity and index
             lower_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% min_z_score]
@@ -955,7 +1055,7 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
         message("Identifying the highest outlier on the right tail...")
         
         #An if statement to determine if there is an outlier
-        if (max_z_score > crit_z) {
+        if (max_z_score > crit_t) {
             
             #Assign the outlier identity and index
             upper_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% max_z_score]
