@@ -1,6 +1,8 @@
 # Ignore the data files
 *.csv
 *.png
+*.numbers
+*.zip
 
 
 #Ignore macOS setting files
