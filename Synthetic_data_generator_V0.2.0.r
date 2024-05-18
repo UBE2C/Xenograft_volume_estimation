@@ -839,14 +839,18 @@ main = function(measurements = arguments$number_of_measurements, samples = argum
         ##Save the generated synthetic data or formatted data if requested
         message("Saving the generated synthetic data... \n")
 
-        for (element in seq_along(Synthetic_data)) {
-            readr::write_csv(x = Synthetic_data[[element]], file = paste0(output_path, "/", names(Synthetic_data)[[element]], ".csv"))
-        }
+        
 
         if (format == TRUE) {
             for (element in seq_along(Formatted_synth_data)) {
                 readr::write_csv(x = Formatted_synth_data[[element]], file = paste0(output_path, "/", "Form_", names(Formatted_synth_data)[[element]], ".csv"))
             }
+            
+        } else {
+            for (element in seq_along(Synthetic_data)) {
+               readr::write_csv(x = Synthetic_data[[element]], file = paste0(output_path, "/", names(Synthetic_data)[[element]], ".csv"))
+            }
+
         }
 
         
@@ -855,7 +859,7 @@ main = function(measurements = arguments$number_of_measurements, samples = argum
         
         ##Success message
         message("The data generation was successful. \n",
-        "The generated .csv and .png files were saved to the ", arguments$output_path, "directory. \n")
+        "The generated .csv and .png files were saved to the ", arguments$output_path, " directory. \n")
 
 
         ##Print session inf
