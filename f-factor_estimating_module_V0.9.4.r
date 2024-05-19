@@ -43,13 +43,10 @@ package_controller = function(packages = CRAN_packages) {
                 "Installing ", element, "now"))
                 install.packages(element)
 
-            } else {
-                message(paste0("The requested package: ", element, "is already installed."))
-            }
+            } 
         }
-    } else {
-        message("No package was requested.")
-    }
+
+    } 
     
 }
 
@@ -242,30 +239,36 @@ arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = 
 
 
 # This function loads the uCT data from the intermediate I/O folder for further processing
-read_uCT_data = function(data_path) {
-    #Initialize a list onto which the uCT data will be added
+read_uCT_data = function(data_path, separator) {
+    ##Declare function variables
+    
+    #Declare a list onto which the uCT data will be added
     uCT_measurements <- list()
     
+
+    ##Start reading  the appropriate files
+
     #List the files found in the intermediate I/O folder
     intermediate_IO_files <- list.files(path = data_path)
     
     #Grep the uCT file names for the checking if statement
-    uCT_file_names <- intermediate_IO_files[grep(pattern = "uCT", x = intermediate_IO_files)]
+    uCT_file_names <- intermediate_IO_files[grep(pattern = "uCT", x = intermediate_IO_files, ignore.case = TRUE)]
 
     #This main if statement will check if the correct files are in the folder
     if (length(uCT_file_names) > 0) {
         
         #Read each uCT .csv file and add them to the output list
         for (item in intermediate_IO_files) {
-            if (grepl(pattern = "uCT", x = item) == TRUE) {
-                uCT_measurements[[item]] <- read.csv(file = paste0(data_path, "/", item), sep = ";")
+            if (grepl(pattern = "uCT", x = item, ignore.case = TRUE) == TRUE) {
+                uCT_measurements[[item]] <- read.csv(file = paste0(data_path, "/", item), sep = separator)
             }
         }
 
         #Name the return list elements based on the original file names
         names(uCT_measurements) <- uCT_file_names
 
-        #Return the uCT data
+        
+        ##Return the uCT data
         return(uCT_measurements)
 
     } else {
@@ -277,37 +280,51 @@ read_uCT_data = function(data_path) {
 
 # This function cleans the uCT data by removing entries without corresponding caliper measurements
 clean_uCT_data = function(read_uCT_output_list) {
-    #Initialize a new list for the clean uCT dataframes
-    clean_uCT_measurement <- list()
+    ##Declare function variables
     
-    #This main for loop will walk through the uCT list of dataframes        
-    for (index in seq_len(length(read_uCT_output_list))) {
-        #This if statement checks if the column necessary for cleaning is present in the uCT dataframe
-        if (is.element(el = "Has_corresponding_caliper_measurements", set = colnames(read_uCT_output_list[[index]])) == TRUE) {
-            #Remove entries without corresponding caliper measurements
-            clean_uCT_df <- dplyr::filter(.data = read_uCT_output_list[[index]], Has_corresponding_caliper_measurements == "Yes")
-            
-            #Resets the row numbers
-            rownames(clean_uCT_df) <- seq_len(nrow(clean_uCT_df))
+    #Declare a new list for the clean uCT dataframes
+    clean_uCT_measurement <- list()
 
-            #Add the clean uCT df to the output list
-            clean_uCT_measurement[[index]] <- clean_uCT_df
+    #Declare an intermediate list to modify
+    temp_uCT_df <- data.frame()
+    
 
-        } else {
-            #Print a warning about the missing column
-            warning("The column: 'Has_corresponding_caliper_measurements', was not found in the file: ", names(read_uCT_output_list)[index],   
-                    "\n  Assuming all entries would be 'Yes' the unmodified uCT_data_frame will be added to the output list")
-            
-            #Add the unmodified uCT df to the output list
-            clean_uCT_measurement[[index]] <- read_uCT_output_list[[index]]
+    ##Clean the dataframes by removing rows containing sparse NA values
+
+    #This main for loop will walk through the uCT list of dataframes and removes rows where there are sparse NA values       
+    for (index in seq_along(read_uCT_output_list)) {
+        #Initialize an intermediate temporary dataframe to store the list elements one-by-one
+        temp_uCT_df <- read_uCT_output_list[[index]]
+
+        #Loop through the measurement columns and look for columns where are some measurements with NAs mixed in
+        for (col in seq(from = 4, to = ncol(temp_uCT_df), by = 1)) {
+            #This if statement will look for columns where are some measurements with NAs mixed in (sparse NAs)
+            if (length(unique(is.na(read_uCT_output_list[[index]][, col]))) > 1) {
+                #A message to warn the user that NA's were found and the appropriate sample row will be removed
+                warning("Some missing values were found in the following table \n", names(read_uCT_output_list)[index], "\n", "at the following column \n", colnames(temp_uCT_df)[col], "\n",
+                "at the following sample/samples \n", temp_uCT_df$Mouse_ID[is.na(temp_uCT_df[, col])], "\n",
+                "The affected samples will be removed for the analysis.")
+                
+                #Remove the appropriate sample row and update the temp dataframe with the new state
+                temp_uCT_df <- temp_uCT_df[!is.na(temp_uCT_df[, col]), ]  
+
+            } 
 
         }
+
+        #Reset the row numbers for the modified dataframe
+        rownames(temp_uCT_df) <- NULL
+
+        #Assign the modified dataframe to the clean list
+        clean_uCT_measurement[[index]] <- temp_uCT_df
+
     }
 
     #Name the elements of the return list based on the elements of the input list
     names(clean_uCT_measurement) <- names(read_uCT_output_list)
-        
-    #Return the clean uCT output list
+
+
+    ##Return the clean uCT output list
     return(clean_uCT_measurement)
 
 }
@@ -320,22 +337,27 @@ clean_uCT_data = function(read_uCT_output_list) {
 
 
 # This function loads the cleaned output files from the Data-processer module
-read_caliper_data = function(data_path) {
-    #Initialize a list onto which the caliper measurements will be added
+read_caliper_data = function(data_path, separator) {
+    ##Declare function variables
+    
+    #Declare a list onto which the caliper measurements will be added
     caliper_measurements <- list()
+
+
+    ##Start reading the appropriate files
 
     #List the files found in the intermediate I/O folder
     intermediate_IO_files <- list.files(path = data_path)
     
     #Grep the uCT file names for the checking if statement
-    processed_caliper_file_names <- intermediate_IO_files[grep(pattern = "processed", x = intermediate_IO_files)]
+    processed_caliper_file_names <- intermediate_IO_files[grep(pattern = "caliper", x = intermediate_IO_files, ignore.case = TRUE)]
     
     #This main if statement will check if the correct files are in the folder
     if (length(processed_caliper_file_names) > 0) {
         #Add the measurements to the list with a for loop
         for (item in intermediate_IO_files) {
-            if (grepl("processed", item) == TRUE) {
-                caliper_measurements[[item]] <- read.csv(file = paste0(data_path, "/", item))
+            if (grepl("caliper", item, ignore.case = TRUE) == TRUE) {
+                caliper_measurements[[item]] <- read.csv(file = paste0(data_path, "/", item), sep = separator)
 
             }
             
@@ -348,7 +370,8 @@ read_caliper_data = function(data_path) {
     #Name the elements of the caliper_measurements list based on the original processed I/O files
     names(caliper_measurements) <- processed_caliper_file_names
 
-    #Return the caliper_measurement list
+
+    ##Return the caliper_measurement list
     return(caliper_measurements)
     
 }
@@ -369,7 +392,7 @@ read_caliper_data = function(data_path) {
 
 ## Processing the caliper measurements to match the entries of the uCT data
 
-
+#MARK: continue from here
 # Trim the caliper measurements to all the uCT entries based on date
 # This function will process the caliper measurements to fit the dates and samples recorded in the uCT measurements
 fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_data_output_list) {
