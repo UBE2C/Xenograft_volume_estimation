@@ -493,9 +493,6 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
     
     ##Define the variables used in the function
 
-    #Assign the trimmed_caliper_measurement list to a variable which will be trimmed progressively
-    input_list <- fit_caliper_measurements_output_list
-
     #Initialize a unified dataframe list, which will unify the bound caliper measurements and selected columns from the clean_uCT_list
     unified_df_list <- list()
 
@@ -505,9 +502,11 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
     
     #Unify the bound caliper measurements and selected columns from the clean_uCT_list
     for (i in seq_along(fit_caliper_measurements_output_list)) {
-        unified_df_list[[i]] <- cbind(fit_caliper_measurements_output_list[[i]], clean_uCT_data_output_list[[i]][, c(grep(pattern = "Volume", x = colnames(clean_uCT_data_output_list[[i]])))])
+        unified_df_list[[i]] <- cbind(fit_caliper_measurements_output_list[[i]], clean_uCT_data_output_list[[i]][, 4:ncol(clean_uCT_data_output_list[[i]])])
     }
 
+    #Name the output list elements
+    names(unified_df_list) <- names(fit_caliper_measurements_output_list)
 
     ##Return the bound_df_list
     return(unified_df_list)
