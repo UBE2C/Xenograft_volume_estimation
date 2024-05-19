@@ -305,9 +305,9 @@ clean_uCT_data = function(read_uCT_output_list, verbose) {
             if (length(unique(is.na(read_uCT_output_list[[index]][, col]))) > 1) {
                 #A message to warn the user that NA's were found and the appropriate sample row will be removed
                 if (verbose == TRUE) {
-                    warning("Some missing values were found in the following table \n", names(read_uCT_output_list)[index], "\n", "at the following column \n", colnames(temp_uCT_df)[col], "\n",
-                    "at the following sample/samples \n", temp_uCT_df$Mouse_ID[is.na(temp_uCT_df[, col])], "\n",
-                    "The affected samples will be removed for the analysis.")
+                    warning("Some missing values were found in the following table: \n", names(read_uCT_output_list)[index], "\n", "at the following column: \n", colnames(temp_uCT_df)[col], "\n",
+                    "at the following sample: \n", temp_uCT_df$Mouse_ID[is.na(temp_uCT_df[, col])], "\n",
+                    "The affected sample will be removed for the analysis.")
 
                 }
                 
@@ -325,6 +325,11 @@ clean_uCT_data = function(read_uCT_output_list, verbose) {
         }
 
         #Remove the columns with only NA values
+        if (verbose == TRUE) {
+            warning("In the following table: \n", names(read_uCT_output_list)[index], "\n", "the following columns: \n", colnames(temp_uCT_df)[only_na_cols], "\n",
+                    "contain only missing values therefore they will be removed for the analysis")
+        }
+        
         temp_uCT_df <- temp_uCT_df[, !only_na_cols]
         
 
