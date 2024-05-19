@@ -279,7 +279,7 @@ read_uCT_data = function(data_path, separator) {
 
 
 # This function cleans the uCT data by removing entries without corresponding caliper measurements
-clean_uCT_data = function(read_uCT_output_list) {
+clean_uCT_data = function(read_uCT_output_list, verbose) {
     ##Declare function variables
     
     #Declare a new list for the clean uCT dataframes
@@ -287,6 +287,9 @@ clean_uCT_data = function(read_uCT_output_list) {
 
     #Declare an intermediate list to modify
     temp_uCT_df <- data.frame()
+
+    #Define a vector containing the bools for the columns which contains only NAs if any
+    only_na_cols <- vector(mode = "logical")
     
 
     ##Clean the dataframes by removing rows containing sparse NA values
@@ -301,9 +304,12 @@ clean_uCT_data = function(read_uCT_output_list) {
             #This if statement will look for columns where are some measurements with NAs mixed in (sparse NAs)
             if (length(unique(is.na(read_uCT_output_list[[index]][, col]))) > 1) {
                 #A message to warn the user that NA's were found and the appropriate sample row will be removed
-                warning("Some missing values were found in the following table \n", names(read_uCT_output_list)[index], "\n", "at the following column \n", colnames(temp_uCT_df)[col], "\n",
-                "at the following sample/samples \n", temp_uCT_df$Mouse_ID[is.na(temp_uCT_df[, col])], "\n",
-                "The affected samples will be removed for the analysis.")
+                if (verbose == TRUE) {
+                    warning("Some missing values were found in the following table \n", names(read_uCT_output_list)[index], "\n", "at the following column \n", colnames(temp_uCT_df)[col], "\n",
+                    "at the following sample/samples \n", temp_uCT_df$Mouse_ID[is.na(temp_uCT_df[, col])], "\n",
+                    "The affected samples will be removed for the analysis.")
+
+                }
                 
                 #Remove the appropriate sample row and update the temp dataframe with the new state
                 temp_uCT_df <- temp_uCT_df[!is.na(temp_uCT_df[, col]), ]  
@@ -311,6 +317,16 @@ clean_uCT_data = function(read_uCT_output_list) {
             } 
 
         }
+
+        #This for loop will loop through the columns of the temp_datafame and flags each columns which contains only NAs for removal
+        for (i in seq_len(ncol(temp_uCT_df))) {
+            only_na_cols[i] <- length(unique(is.na(temp_uCT_df[, i]))) == 1 && unique(is.na(temp_uCT_df[, i])) == TRUE
+
+        }
+
+        #Remove the columns with only NA values
+        temp_uCT_df <- temp_uCT_df[, !only_na_cols]
+        
 
         #Reset the row numbers for the modified dataframe
         rownames(temp_uCT_df) <- NULL
