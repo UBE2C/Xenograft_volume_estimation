@@ -502,7 +502,7 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
     
     #Unify the bound caliper measurements and selected columns from the clean_uCT_list
     for (i in seq_along(fit_caliper_measurements_output_list)) {
-        unified_df_list[[i]] <- cbind(fit_caliper_measurements_output_list[[i]], clean_uCT_data_output_list[[i]][, 4:ncol(clean_uCT_data_output_list[[i]])])
+        unified_df_list[[i]] <- cbind(fit_caliper_measurements_output_list[[i]], clean_uCT_data_output_list[[i]][, c(grep(pattern = "volume", x = colnames(clean_uCT_data_output_list[[i]]), ignore.case = TRUE))])
     }
 
     #Name the output list elements
@@ -525,7 +525,7 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
 
 
 
-
+#MARK: continue from here
 ## Calculate the f-constants to each uCT-measurement-caliper measurement group
 
 
@@ -533,64 +533,152 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
 # NOTE: formula solved to f f = V / (pi/6) * (l * w)^(3/2)
 
 
-# This function calculates the sample mean f-constants based on a mean tumor volume form the uCTs and a mean caliper measurements from the LxW values
+# This function calculates the sample mean f-constants based on the tumor volumes form the uCTs and the caliper measurements from the LxW values
 calculate_f_constants = function(bind_and_unify_measurements_output_list) {
-    
-
     ##Define the variables used in the function
 
-    #Assign the bind_and_unify_measurements_output_list to a variable which will be returned
-    measurements_with_f_constants_list <- bind_and_unify_measurements_output_list
+    #Initialize a list which will hold the calculated f-constants for each sample of each dataframe
+    f_constants <- vector(mode = "list", length = length(bind_and_unify_measurements_output_list))
 
-    #Declare a vector for temporary Volume values
-    temp_V_values <- vector(mode = "numeric", length = 2)
+    #Initialize a new list which will hold the new column names for the calculated f-constants (designated by date)
+    new_col_names <- vector(mode = "list", length = length(bind_and_unify_measurements_output_list))
 
-    #Declare a vector for the temporary mean volumes for calculating the f-constants
-    temp_V_mean <- vector(mode = "numeric", length = 1)
+    #Initialize the final output list
+    output_list <- vector(mode = "list", length = length(bind_and_unify_measurements_output_list))
+    
 
-    #Declare a vector for temporary LxW values
-    temp_LW_values <- vector(mode = "numeric")
+    ##Separate the measurements by date and calculate the corresponding f-constant
 
-    #Declare a vector for the temporary mean LxW for calculating the f-constants
-    temp_LW_mean <- vector(mode = "numeric", length = 1)
+    #This loop will traverse the input list of dataframes and splits down the input list into individual dataframes
+    for (element in seq_along(bind_and_unify_measurements_output_list)) {
+        ##Define dynamic variables
 
+        #Initialize a dynamic temp_dataframe to store currently processed list element
+        temp_unif_df <- bind_and_unify_measurements_output_list[[element]]
 
-    #This outer loop traverses the unified measurement dfs list
-    for (i in seq_along(bind_and_unify_measurements_output_list)) {
-        
-        #This inner loop traverses the unified dataframes themselves and adds a new column "f_constant" and fills it with the
-        #calculated f-constants to each sample
-        for (e in seq_len(nrow(bind_and_unify_measurements_output_list[[i]]))) {
+        #Initialize a dynamic temp_dataframe to store currently processed list element
+        temp_trim_df <- data.frame()
+
+        #Initialize vectors for the the single LxW and volume
+        temp_LxW_values <- vector(mode = "numeric", length = nrow(temp_unif_df))
+        temp_ct_volumes <- vector(mode = "numeric", length = nrow(temp_unif_df))
+
+        #Initialize a dynamic date variable to store the unique dates found in the current df
+        sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(temp_unif_df), pattern = "_[0-9\\.]+")))
+
+        #The inner loop will traverse the extracted sampling dates to split the dataframes down to pairs of LxV-volume columns for processing
+        for (item in seq_along(sampling_dates)) {
+            #Split down the current measurement dataframe into a single pair of LxW - Volume columns which belongs to the same sampling date
+            temp_trim_df <- temp_unif_df[, grep(pattern = sampling_dates[item], x = colnames(temp_unif_df))]
+
+            #Further split the previously created trimmed dataframes into a vector of LxW values
+            temp_LxW_values <- temp_trim_df[, grep(pattern = "LxW", x = colnames(temp_trim_df), ignore.case = TRUE)]
+
+            #Further split the previously created trimmed dataframes into a vector of Volume values
+            temp_ct_volumes <- temp_trim_df[, grep(pattern = "volume", x = colnames(temp_trim_df), ignore.case = TRUE)]
+
+            #Use the LxW and Volume vectors to calculate the f-constant for each sample and assign the results to the f-constants list (creates a nested list)
+            f_constants[[element]][[item]] <- temp_ct_volumes / ((pi / 6) * (temp_LxW_values)^(3 / 2))
+
             
-            #Extract the values from the selected row and columns
-            temp_V_values <- as.numeric(unlist(bind_and_unify_measurements_output_list[[i]][e, c(grep(pattern = "Volume", x = colnames(bind_and_unify_measurements_output_list[[i]])))]))
-
-            #Calculate the mean, ignoring NA values
-            temp_V_mean <- mean(temp_V_values, na.rm = TRUE)
-
-            #Extract the values from the selected row and columns
-            temp_LW_values <- as.numeric(unlist(bind_and_unify_measurements_output_list[[i]][e, c(grep(pattern = "^LxW", x = colnames(bind_and_unify_measurements_output_list[[i]])))]))
-
-            #Calculate the mean, ignoring NA values
-            temp_LW_mean <- mean(temp_LW_values, na.rm = TRUE)
-            
-            #Assign the mean LW values to each sample
-            measurements_with_f_constants_list[[i]]$mean_LxW[e] <- temp_LW_mean
-
-            #Assign the mean Volume values to each sample
-            measurements_with_f_constants_list[[i]]$mean_Volume[e] <- temp_V_mean
-
-
-            #Calculate the sample mean f-constants to each sample
-            measurements_with_f_constants_list[[i]]$f_constants[e] <- temp_V_mean / ((pi / 6) * (temp_LW_mean)^(3 / 2))
-
         }
+
+        #Assign the new f-constant column names (based on sampling dates) to the initialized variable
+        new_col_names[[element]] <- paste0("f_const", sampling_dates)
+        
     }
 
+    #This loop traverses the f-constants nested list to take each individual f-factor vector and add it to the input list dataframes as columns
+    for (element in seq_along(f_constants)) {
+        ##Define dynamic variables
 
-    ##Return the output list containing the f-constants
-    return(measurements_with_f_constants_list)
+        #Initialize a dynamic dataframe holding the current input list element (dataframe)
+        temp_modif_df <- bind_and_unify_measurements_output_list[[element]]
+        
+        #This inner loop traverses the nested items in the f-constants list (the calculated f-constants based on sampling dates)
+        for (item in seq_along(f_constants[[element]])) {
+            #Bind the f-constant vector to the dynamic dataframe 
+            temp_modif_df <- cbind(temp_modif_df, f_constants[[element]][[item]])
+
+        }
+        
+        #Assign the appended dataframes as the appropriate output list element
+        output_list[[element]] <- temp_modif_df
+
+        #Change the names of the new columns in each list element(dataframe) to the appropriate name
+        colnames(output_list[[element]])[grep(pattern = "f_constants", x = colnames(output_list[[element]]))] <- new_col_names[[element]]
+    }
+
+    #This loop traverses the output list to calculate a mean of the f-constants calculated to each date
+    for (element in seq_along(output_list)) {
+        ##Define dynamic variables
+
+        #Initialize a dynamic dataframe which will hold the mean f-constants
+        temp_element_df <- output_list[[element]]
+
+        #This inner loop traverses the rows of every dataframe in order to trim them down to the calculated f-constants columns and calculate the mean
+        #f-constant values for each sample
+        for (row in seq_len(nrow(temp_element_df))) {
+            #Split the dataframes to the f-constant columns and calculate the mean values for each sample (row)
+            temp_element_df$f_const_mean[row] <- mean(as.numeric(temp_element_df[row, grep(pattern = "f_const", x = colnames(temp_element_df))]))
+
+        }
+
+        #Re-assign the modified dataframes holding the mean_f-constants to the final output list
+        output_list[[element]] <- temp_element_df
+        
+    }
+
+    #Assign the original list element names to the output list
+    names(output_list) <- names(bind_and_unify_measurements_output_list)
+
+
+    ##Return the final output list
+    return(output_list)
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ################################################# Section end #################################################
