@@ -1396,63 +1396,98 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_output_list, nonparam_test = "numeric_outlier_test") {
     for (index in seq_along(is_data_normal_output_list)) {
         if (is_data_normal_output_list[[index]]$p.value < 0.05) {
-            message("It seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection and removal. \n")
+            message("\nIt seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection and removal.")
 
             if (nonparam_test == "numeric_outlier_test") {
-                for (e in seq_along(calculate_f_constants_output_list)) {
-                    calculate_f_constants_output_list[[e]] <- remove_outlier_f_const_NOTest(calculate_f_constants_output_list[[e]])
+                #Print the name of the current list element for better orientation
+                message(names(calculate_f_constants_output_list)[[index]])
 
-                }
-
-                return(calculate_f_constants_output_list)
+                #Run the appropriate outlier cleaner function and assign the result to the appropriate output list element
+                calculate_f_constants_output_list[[index]] <- remove_outlier_f_const_NOTest(calculate_f_constants_output_list[[index]])
                 
             } else if (nonparam_test == "mZscore_test") {
+                #Print the name of the current list element for better orientation
+                message(names(calculate_f_constants_output_list)[[index]])
+
+                #Set the eval condition for the while loop
                 while_loop_run <- TRUE
+
+                #Initiate a while loop which will loop through the dataframe while outliers on the left tail are present
                 while (while_loop_run == TRUE) {
-                    for (i in seq_along(calculate_f_constants_output_list)) {
-                        result <- remove_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[i]], left_tail = TRUE)
-                        calculate_f_constants_output_list[[i]] <- result[[1]]
-                        while_loop_run <- result[[2]]  # Update while_loop_run based on outliers_found
-                    }
+                    #Run the appropriate outlier cleaner function and assign the result to a new list which will hold the two elements
+                    result <- remove_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[index]], left_tail = TRUE)
+
+                    #Assign the appropriate outlier cleaner function's result to the appropriate output list element
+                    calculate_f_constants_output_list[[index]] <- result[[1]]
+
+                    #Update while_loop_run's eval parameter based on outliers_found
+                    while_loop_run <- result[[2]]  
+                    
                 }
 
+                #Set the eval condition for the while loop
                 while_loop_run <- TRUE
+
+                #Initiate a while loop which will loop through the dataframe while outliers on the right tail are present
                 while (while_loop_run == TRUE) {
-                    for (i in seq_along(calculate_f_constants_output_list)) {
-                        result <- remove_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[i]], left_tail = FALSE)
-                        calculate_f_constants_output_list[[i]] <- result[[1]]
-                        while_loop_run <- result[[2]]  # Update while_loop_run based on outliers_found
-                    }
+                    #Run the appropriate outlier cleaner function and assign the result to a new list which will hold the two elements
+                    result <- remove_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[index]], left_tail = FALSE)
+
+                    #Assign the appropriate outlier cleaner function's result to the appropriate output list element
+                    calculate_f_constants_output_list[[index]] <- result[[1]]
+
+                    #Update while_loop_run's eval parameter based on outliers_found
+                    while_loop_run <- result[[2]]
+                    
                 }
 
-                return(calculate_f_constants_output_list)
             }
 
 
         } else {
-            message("It seems your f-constants show a normal distribution. A parametric Grubbs test will be used for outlier detection and removal. \n")
+            message("\nIt seems your f-constants show a normal distribution. A parametric Grubbs test will be used for outlier detection and removal.")
 
+            #Print the name of the current list element for better orientation
+            message(names(calculate_f_constants_output_list)[[index]])
+
+            #Set the eval condition for the while loop
             while_loop_run <- TRUE
-                while (while_loop_run == TRUE) {
-                    for (i in seq_along(calculate_f_constants_output_list)) {
-                        result <- remove_outlier_f_const_Grubbs(calculate_f_constants_output_list[[i]], left_tail = TRUE)
-                        calculate_f_constants_output_list[[i]] <- result[[1]]
-                        while_loop_run <- result[[2]]  # Update while_loop_run based on outliers_found
-                    }
-                }
+            
+            #Initiate a while loop which will loop through the dataframe while outliers on the left tail are present
+            while (while_loop_run == TRUE) {
+                #Run the appropriate outlier cleaner function and assign the result to a new list which will hold the two elements
+                result <- remove_outlier_f_const_Grubbs(calculate_f_constants_output_list[[index]], left_tail = TRUE)
 
-                while_loop_run <- TRUE
-                while (while_loop_run == TRUE) {
-                    for (i in seq_along(calculate_f_constants_output_list)) {
-                        result <- remove_outlier_f_const_Grubbs(calculate_f_constants_output_list[[i]], left_tail = FALSE)
-                        calculate_f_constants_output_list[[i]] <- result[[1]]
-                        while_loop_run <- result[[2]]  # Update while_loop_run based on outliers_found
-                    }
-                }
+                #Assign the appropriate outlier cleaner function's result to the appropriate output list element
+                calculate_f_constants_output_list[[index]] <- result[[1]]
 
-            return(calculate_f_constants_output_list)
+                #Update while_loop_run's eval parameter based on outliers_found
+                while_loop_run <- result[[2]]
+                    
+            }
+
+            #Set the eval condition for the while loop
+            while_loop_run <- TRUE
+
+            #Initiate a while loop which will loop through the dataframe while outliers on the right tail are present
+            while (while_loop_run == TRUE) {
+                #Run the appropriate outlier cleaner function and assign the result to a new list which will hold the two elements 
+                result <- remove_outlier_f_const_Grubbs(calculate_f_constants_output_list[[index]], left_tail = FALSE)
+
+                #Assign the appropriate outlier cleaner function's result to the appropriate output list element
+                calculate_f_constants_output_list[[index]] <- result[[1]]
+
+                #Update while_loop_run's eval parameter based on outliers_found
+                while_loop_run <- result[[2]]
+                    
+            }
+
         }
     }
+
+
+    ## Return the outlier free output list
+    return(calculate_f_constants_output_list)
 }
 
 
