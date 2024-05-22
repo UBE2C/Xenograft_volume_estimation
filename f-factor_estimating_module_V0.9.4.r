@@ -639,48 +639,6 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ################################################# Section end #################################################
 
 
@@ -705,7 +663,7 @@ is_data_normal = function(calculate_f_constants_output_list) {
 
     #This for loop will carry out a Shapiro-Wilk normality test
     for (i in seq_along(calculate_f_constants_output_list)) {
-        shapiro_results[[i]] <- shapiro.test(calculate_f_constants_output_list[[i]]$f_constants)
+        shapiro_results[[i]] <- shapiro.test(calculate_f_constants_output_list[[i]]$f_const_mean)
     }
 
 
@@ -744,7 +702,7 @@ remove_outlier_f_const_NOTest = function(non_normal_list_element) {
     lower_outlier <- vector(mode = "numeric")
 
     #Order the constants in am ascending order
-    ordered_constants <- list_element_to_modify$f_constants[order(list_element_to_modify$f_constants)]
+    ordered_constants <- list_element_to_modify$f_const_mean[order(list_element_to_modify$f_const_mean)]
 
 
     #Calculate the quartile ranges and allocate them to the appropriate list elements
@@ -775,7 +733,7 @@ remove_outlier_f_const_NOTest = function(non_normal_list_element) {
         message("The following elements are outliers on the right (upper) tail, and will be removed: \n", upper_outlier, "\n")
             
         #Remove the upper outliers
-        list_element_to_modify <- list_element_to_modify[!list_element_to_modify$f_constants %in% upper_outlier, ]
+        list_element_to_modify <- list_element_to_modify[!list_element_to_modify$f_const_mean %in% upper_outlier, ]
     }
 
     #An if statement to check if there were any lower outliers and if yes to remove them
@@ -785,7 +743,7 @@ remove_outlier_f_const_NOTest = function(non_normal_list_element) {
         message("The following elements are outliers on the left (lower) tail, and will be removed: \n", lower_outlier, "\n")
 
         #Remove the lower outliers
-        list_element_to_modify <- list_element_to_modify[!list_element_to_modify$f_constants %in% lower_outlier, ]
+        list_element_to_modify <- list_element_to_modify[!list_element_to_modify$f_const_mean %in% lower_outlier, ]
     }
 
 
@@ -827,7 +785,7 @@ detect_outlier_f_const_NOTest = function(non_normal_list_element) {
     lower_outlier <- vector(mode = "numeric")
 
     #Order the constants in am ascending order
-    ordered_constants <- non_normal_list_element$f_constants[order(non_normal_list_element$f_constants)]
+    ordered_constants <- non_normal_list_element$f_const_mean[order(non_normal_list_element$f_const_mean)]
 
 
     #Calculate the quartile ranges and allocate them to the appropriate list elements
@@ -945,7 +903,7 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     ##Calculate the defined variables
 
     #Assign and sort the f_constants
-    ordered_f_constants <- non_normal_list_element$f_constants[order(non_normal_list_element$f_constants)]
+    ordered_f_constants <- non_normal_list_element$f_const_mean[order(non_normal_list_element$f_const_mean)]
 
     #Assign the input dataframe as an output dataframe so in case of no outliers the original df will be returned
     output_df <- non_normal_list_element
@@ -954,19 +912,19 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     f_const_median <- median(ordered_f_constants, na.rm = TRUE)
 
     #Calculate the MAD
-    f_const_mad <- mad(x = non_normal_list_element$f_constants, na.rm = TRUE)
+    f_const_mad <- mad(x = non_normal_list_element$f_const_mean, na.rm = TRUE)
 
     #Calculate the minimum z-score
-    min_z_score <- (f_const_median - min(non_normal_list_element$f_constants)) / f_const_mad
+    min_z_score <- (f_const_median - min(non_normal_list_element$f_const_mean)) / f_const_mad
 
     #Calculate all the z-scores
-    for (i in seq_along(non_normal_list_element$f_constants)) {
-        z_scores[i] <- abs((non_normal_list_element$f_constants[i] - f_const_median) / f_const_mad)
+    for (i in seq_along(non_normal_list_element$f_const_mean)) {
+        z_scores[i] <- abs((non_normal_list_element$f_const_mean[i] - f_const_median) / f_const_mad)
     
     }
 
     #Calculate the maximum z-score
-    max_z_score <- (max(non_normal_list_element$f_constants) - f_const_median) / f_const_mad
+    max_z_score <- (max(non_normal_list_element$f_const_mean) - f_const_median) / f_const_mad
 
     #Calculate the degrees of freedom
     deg_of_f <- nrow(non_normal_list_element) - 1
@@ -985,13 +943,13 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
         if (min_z_score > crit_t) {
             
             #Assign the outlier identity and index
-            lower_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% min_z_score]
-            min_outlier_index <- match(x = lower_outlier_ident, non_normal_list_element$f_constants)
+            lower_outlier_ident <- non_normal_list_element$f_const_mean[z_scores %in% min_z_score]
+            min_outlier_index <- match(x = lower_outlier_ident, non_normal_list_element$f_const_mean)
 
             message("The following minimum value was found to be an outlier: ", lower_outlier_ident, "at the following row index: ", min_outlier_index, " and therefore will be removed. \n")
             
             #Assign the modified dataframe
-            output_df <- non_normal_list_element[!non_normal_list_element$f_constants %in% lower_outlier_ident, ]
+            output_df <- non_normal_list_element[!non_normal_list_element$f_const_mean %in% lower_outlier_ident, ]
 
             #Update the while loop condition
             while_loop_run <- TRUE
@@ -1011,13 +969,13 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
         if (max_z_score > crit_t) {
             
             #Assign the outlier identity and index
-            upper_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% max_z_score]
-            max_outlier_index <- match(x = upper_outlier_ident, non_normal_list_element$f_constants)
+            upper_outlier_ident <- non_normal_list_element$f_const_mean[z_scores %in% max_z_score]
+            max_outlier_index <- match(x = upper_outlier_ident, non_normal_list_element$f_const_mean)
 
             message("The following maximum value was found to be an outlier: ", upper_outlier_ident, "\n", "at the following row index: ", max_outlier_index, " and therefore will be removed. \n")
             
             #Assign the modified dataframe
-            output_df <- non_normal_list_element[!non_normal_list_element$f_constants %in% upper_outlier_ident, ]
+            output_df <- non_normal_list_element[!non_normal_list_element$f_const_mean %in% upper_outlier_ident, ]
 
             #Update the while loop condition
             while_loop_run <- TRUE
@@ -1093,25 +1051,25 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     ##Calculate the defined variables
 
     #Assign and sort the f_constants
-    ordered_f_constants <- non_normal_list_element$f_constants[order(non_normal_list_element$f_constants)]
+    ordered_f_constants <- non_normal_list_element$f_const_mean[order(non_normal_list_element$f_const_mean)]
 
     #Calculate the median of the f-constants
     f_const_median <- median(ordered_f_constants, na.rm = TRUE)
 
     #Calculate the MAD
-    f_const_mad <- mad(x = non_normal_list_element$f_constants, na.rm = TRUE)
+    f_const_mad <- mad(x = non_normal_list_element$f_const_mean, na.rm = TRUE)
 
     #Calculate the minimum z-score
-    min_z_score <- (f_const_median - min(non_normal_list_element$f_constants)) / f_const_mad
+    min_z_score <- (f_const_median - min(non_normal_list_element$f_const_mean)) / f_const_mad
 
     #Calculate all the z-scores
-    for (i in seq_along(non_normal_list_element$f_constants)) {
-        z_scores[i] <- abs((non_normal_list_element$f_constants[i] - f_const_median) / f_const_mad)
+    for (i in seq_along(non_normal_list_element$f_const_mean)) {
+        z_scores[i] <- abs((non_normal_list_element$f_const_mean[i] - f_const_median) / f_const_mad)
     
     }
 
     #Calculate the maximum z-score
-    max_z_score <- (max(non_normal_list_element$f_constants) - f_const_median) / f_const_mad
+    max_z_score <- (max(non_normal_list_element$f_const_mean) - f_const_median) / f_const_mad
 
     #Calculate the degrees of freedom
     deg_of_f <- nrow(non_normal_list_element) - 1
@@ -1130,8 +1088,8 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
         if (min_z_score > crit_t) {
             
             #Assign the outlier identity and index
-            lower_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% min_z_score]
-            lower_outlier_index <- match(x = lower_outlier_ident, non_normal_list_element$f_constants)
+            lower_outlier_ident <- non_normal_list_element$f_const_mean[z_scores %in% min_z_score]
+            lower_outlier_index <- match(x = lower_outlier_ident, non_normal_list_element$f_const_mean)
 
             message("The following minimum value was found to be an outlier: ", lower_outlier_ident, "at the following row index: ", lower_outlier_index, "\n")
 
@@ -1158,8 +1116,8 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
         if (max_z_score > crit_t) {
             
             #Assign the outlier identity and index
-            upper_outlier_ident <- non_normal_list_element$f_constants[z_scores %in% max_z_score]
-            upper_outlier_index <- match(x = upper_outlier_ident, non_normal_list_element$f_constants)
+            upper_outlier_ident <- non_normal_list_element$f_const_mean[z_scores %in% max_z_score]
+            upper_outlier_index <- match(x = upper_outlier_ident, non_normal_list_element$f_const_mean)
 
             message("The following maximum value was found to be an outlier: ", upper_outlier_ident, "\n", "at the following row index: ", upper_outlier_index, "\n")
             
@@ -1230,7 +1188,7 @@ remove_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
     ##Calculate and assign the appropriate variables
 
     #Assign the f-constants to a new vector
-    f_constants <- normal_list_element$f_constants
+    f_constants <- normal_list_element$f_const_mean
 
     #Assign the input dataframe as an output dataframe so in case of no outliers the original df will be returned
     output_df <- normal_list_element
@@ -1353,7 +1311,7 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
     ##Calculate and assign the appropriate variables
 
     #Assign the f-constants to a new vector
-    f_constants <- normal_list_element$f_constants
+    f_constants <- normal_list_element$f_const_mean
 
     #This if statement controls if the upper or lower outlier is identified and removed
     if (left_tail == TRUE) {
@@ -1448,7 +1406,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
                 return(calculate_f_constants_output_list)
                 
-            } else {
+            } else if (nonparam_test == "mZscore_test") {
                 while_loop_run <- TRUE
                 while (while_loop_run == TRUE) {
                     for (i in seq_along(calculate_f_constants_output_list)) {
@@ -1500,20 +1458,8 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
 
 
-## This a wrapper function which binds the 3 outlier detection functions together
-outlier_detector = function(calculate_f_constants_output_list, is_data_normal_output_list, nonparam_test = "numeric_outlier_test", left_tail = TRUE) {
-    ##Declare variables
-
-    #Declare the return list for the numeric outlier test (NOTest)
-    return_list_NOTest <- vector(mode = "list", length = 2)
-    
-    #Declare the return lists for the modified Z-score test
-    return_list_mZscore <- vector(mode = "list")
-
-    #Declare the return lists for the Grubbs test
-    return_list_Grubbs <- vector(mode = "list")
-
-
+## This a wrapper function which binds the 3 outlier detection functions together (please note that the detect function returns nothing, only messages!)
+outlier_detector = function(calculate_f_constants_output_list, is_data_normal_output_list, nonparam_test = "numeric_outlier_test") {
     ##Run the appropriate detector functions
 
     #This construct checks if the f-constants from the elements of the calculate f-constants output list are normally distributed
@@ -1522,43 +1468,44 @@ outlier_detector = function(calculate_f_constants_output_list, is_data_normal_ou
         
         #This if statement checks if the f-factor distribution is normal
         if (is_data_normal_output_list[[index]]$p.value < 0.05) {
-            message("It seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection. \n")
+            message("\nIt seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection.")
         
             #This if statement is responsible for choosing a non-parametric test
             if (nonparam_test == "numeric_outlier_test") {
-                for (e in seq_along(calculate_f_constants_output_list)) {
-                    return_list_NOTest[[e]] <- detect_outlier_f_const_NOTest(calculate_f_constants_output_list[[e]])
-
-                }
-
-                #Return the detected outlier identities and indexes
-                return(return_list_NOTest)
                 
-            } else {
+                #Print the name of the current list element for better orientation
+                message(names(calculate_f_constants_output_list)[[index]])
 
-                #Doing the outlier test on the left tail with the modified Z-score test
-                for (i in seq_along(calculate_f_constants_output_list)) {
-                    return_list_mZscore[[i]] <- detect_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[i]], left_tail = left_tail)
+                #Run the appropriate detection test
+                detect_outlier_f_const_NOTest(calculate_f_constants_output_list[[index]])
+  
+            } else if (nonparam_test == "mZscore_test") {
 
-                }
+                
+                #Print the name of the current list element for better orientation
+                message(names(calculate_f_constants_output_list)[[index]])
 
-                #Return the detected outlier identities and indexes
-                return(return_list_mZscore)
+                #Run the appropriate detection test
+                detect_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[index]], left_tail = TRUE)
+
+                #Run the appropriate detection test
+                detect_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[index]], left_tail = FALSE)
 
             }
         
         } else {
-            message("It seems your f-constants show a normal distribution. A parametric Grubbs test will be used for outlier detection. \n")
+            message("\nIt seems your f-constants show a normal distribution. A parametric Grubbs test will be used for outlier detection.")
 
-            #Doing the outlier test on the left tail with Grubbs test
-            for (i in seq_along(calculate_f_constants_output_list)) {
-                return_list_Grubbs[[i]] <- detect_outlier_f_const_Grubbs(calculate_f_constants_output_list[[i]], left_tail = left_tail)
-                        
-            }
+            
+            #Print the name of the current list element for better orientation
+            message(names(calculate_f_constants_output_list)[[index]])
 
-            #Return the detected outlier identities and indexes
-            return(return_list_Grubbs)
+            #Run the appropriate detection test
+            detect_outlier_f_const_Grubbs(calculate_f_constants_output_list[[index]], left_tail = TRUE)
 
+            #Run the appropriate detection test
+            detect_outlier_f_const_Grubbs(calculate_f_constants_output_list[[index]], left_tail = FALSE)
+                    
         }
 
     }   
