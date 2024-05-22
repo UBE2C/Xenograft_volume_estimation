@@ -1577,7 +1577,7 @@ calc_mean_f = function(calculate_f_constants_output_list) {
 
     ##Calculations
     for (index in seq_along(input_list)) {
-        return_list[[index]] <- mean(input_list[[index]]$f_constants)
+        return_list[[index]] <- mean(input_list[[index]]$f_const_mean)
     }
 
 
@@ -1590,18 +1590,15 @@ calc_mean_f = function(calculate_f_constants_output_list) {
 
 
 ## This function will estimate the tumor volumes based on the mean f-constant
-estimate_tumor_volume = function(calculate_f_constants_output_list, mean_f_values_list) {
+estimate_tumor_volume = function(input_measurement_list, mean_f_values_list) {
     ##Declare the function variables
 
-    #List to modify
-    input_list <- vector(mode = "list", length = length(calculate_f_constants_output_list))
-
     #List to return
-    return_list <- vector(mode = "list", length = length(calculate_f_constants_output_list))
+    return_list <- vector(mode = "list", length = length(input_measurement_list))
 
 
     ##Assign function variables
-    input_list <- calculate_f_constants_output_list
+    input_list <- input_measurement_list
 
 
     ##Calculations
@@ -1609,19 +1606,33 @@ estimate_tumor_volume = function(calculate_f_constants_output_list, mean_f_value
     #This for loop will walk along the input list to access each element
     #NOTE: the length of the input_df and the mean_f_values_list is the same, so indexes can be used for both
     for (index in seq_along(input_list)) {
-        #Declare a temporary dataframe
-        temp_df <- data.frame(matrix(nrow = nrow(input_list[[index]]), ncol = ncol(input_list[[index]])))
-
-        #Assign temp_df
+        #Initialize a temp_df using the elements of the input list
         temp_df <- input_list[[index]]
 
-        #This for loop will progress through the rows of each individual list element (dataframe) to estimate the tumor volumes using the 
+        #Initialize a vector containing the sampling dates for naming the estimated tumor volumes
+        sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(temp_df), pattern = "_[0-9\\.]+")))
+
+        #Initialize a temporary df which will contain the LxW columns for the volume estimation
+        temp_lxw_df <- temp_df[, grep(pattern = "LxW", x = colnames(temp_df), ignore.case = TRUE)]
+
+        #Initialize a temporary df which will contain the estimated tumor volumes
+        temp_vol_df <- data.frame(matrix(nrow = nrow(temp_lxw_df), ncol = ncol(temp_lxw_df)))
+
+        #This nested for loop will progress through the LxW columns and rows of each individual list element (dataframe) to estimate the tumor volumes using the 
         #appropriate formula
-        for (ind in seq_len(nrow(input_list[[index]]))) {
+        for (col in seq_len(ncol(temp_lxw_df))) {
+            for (row in seq_len(nrow(temp_lxw_df))) {
             
-            #Estimate and assign the tumor volumes to each individual sample in the temp_df
-            temp_df$Estim_tumor_vol[ind] <- (pi / 6) * mean_f_values_list[[index]] * (temp_df$mean_LxW[ind])^(3 / 2)
+                #Estimate and assign the tumor volumes to each individual sample in the temp_df
+                temp_vol_df[row, col] <- (pi / 6) * mean_f_values_list[[index]] * (temp_lxw_df[row, col])^(3 / 2)
+            }
         }
+
+        #Name the new columns containing the estimated tumor volumes
+        colnames(temp_vol_df) <- paste0("Estim_volume", sampling_dates)
+        
+        #Bind the estimated volumes to the parent dataframe
+        temp_df <- cbind(temp_df, temp_vol_df)
 
         #Assign the temp_df to the return list for each input list element
         return_list[[index]] <- temp_df
