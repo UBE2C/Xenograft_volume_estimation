@@ -440,6 +440,7 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
 
         #Initialize a list onto which the sampling dates will be added (NOTE: the function assumes that the sampling dates between the uCT and caliper measurements are the same!)
         uCT_sampling_dates <- unlist(stringr::str_extract_all(string = colnames(temp_uct_df), pattern = "_[0-9\\.]+"))
+        uCT_sampling_dates <<- unlist(stringr::str_extract_all(string = colnames(temp_uct_df), pattern = "_[0-9\\.]+"))
 
         
         #This inner loop traverses the caliper measurements list
@@ -525,7 +526,7 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
 
 
 
-#MARK: continue from here
+
 ## Calculate the f-constants to each uCT-measurement-caliper measurement group
 
 
@@ -1564,9 +1565,6 @@ outlier_detector = function(calculate_f_constants_output_list, is_data_normal_ou
 calc_mean_f = function(calculate_f_constants_output_list) {
     ##Declare the function variables
 
-    #List to modify
-    input_list <- vector(mode = "list", length = length(calculate_f_constants_output_list))
-
     #List to return
     return_list <- vector(mode = "list", length = length(calculate_f_constants_output_list))
 
@@ -1580,6 +1578,8 @@ calc_mean_f = function(calculate_f_constants_output_list) {
         return_list[[index]] <- mean(input_list[[index]]$f_const_mean)
     }
 
+    #Name the return list elements
+    names(return_list) <- names(input_list)
 
     ##Return the output list
     return(return_list)
@@ -1657,7 +1657,7 @@ estimate_tumor_volume = function(input_measurement_list, mean_f_values_list) {
 
 
 
-
+###MARK: Cntinue from here
 ## Correct the estimated tumor volumes
 ## NOTE: this is a complex function. The idea is that it tests what percentage of tumor volume deviation comes from the 0.5, 1, 1.5, 2 
 ## standard deviation distance of sample f-constants from the calculated mean f-constant. Then based on which SD bracket
@@ -1666,10 +1666,7 @@ estimate_tumor_volume = function(input_measurement_list, mean_f_values_list) {
 correct_tumor_vol = function(estimated_tumor_volume_list, mean_f_values_list) {
     ##Declare static function variables
 
-    #Define the input list
-    input_list <- vector(mode = "list", length = length(estimated_tumor_volume_list))
-
-    #Define the return/output list
+    #Initialize the return/output list
     return_list <- vector(mode = "list", length = length(estimated_tumor_volume_list))
 
 
@@ -1684,8 +1681,8 @@ correct_tumor_vol = function(estimated_tumor_volume_list, mean_f_values_list) {
     for (index in seq_along(input_list)) {
         ##Declare dynamic function variables
 
-        #Define a vector for the standard deviation fractions
-        std_frac <- vector(mode = "numeric", length = 5)
+        #Define a vector for the standard deviation bins
+        std_bin <- vector(mode = "numeric", length = 5)
 
         #Define a vector containing the standard deviations of 0.5-2 SD below mean
         below_mean_std_vals <- vector(mode = "numeric", length = 5)
@@ -1703,9 +1700,6 @@ correct_tumor_vol = function(estimated_tumor_volume_list, mean_f_values_list) {
         above_mean_volumes <- vector(mode = "numeric", length = 5)
         names(above_mean_volumes) <- as.character(seq(from = 0, to = 2, by = 0.5))
 
-        #Define the temp_df
-        temp_df <- data.frame(matrix(nrow = nrow(input_list[[index]]), ncol = ncol(input_list[[index]])))
-
         #Define a dynamic filter_df
         filter_list <- vector(mode = "list", length = 4)
 
@@ -1719,21 +1713,21 @@ correct_tumor_vol = function(estimated_tumor_volume_list, mean_f_values_list) {
         temp_df <- input_list[[index]]
 
         #Assign the standard deviation variable
-        temp_std <- sd(temp_df$f_constants)
+        temp_std <- sd(temp_df$f_const_mean)
 
         #Assign the standard deviation fractions
-        std_frac <- seq(from = 0, to = 2, by = 0.5)
+        std_bin <- seq(from = 0, to = 2, by = 0.5)
 
         #Assign the standard deviations below mean (we start with 0 - the mean - and go down by half a sd compared to the mean)
-        below_mean_std_vals <- mean_f_values_list[[index]] - (temp_std * std_frac)
+        below_mean_std_vals <- mean_f_values_list[[index]] - (temp_std * std_bin)
 
         #Assign the standard deviations above mean (we start with 0 - the mean - and go up by half a sd compared to the mean)
-        above_mean_std_vals <- mean_f_values_list[[index]] + (temp_std * std_frac)
+        above_mean_std_vals <- mean_f_values_list[[index]] + (temp_std * std_bin)
 
         #Assign the tumor volume deviation below mean (in this case the tumor volumes are
         #over-estimated)
         for (ind in seq_along(below_mean_std_vals)) {
-            filter_list[[ind]] <- dplyr::filter(temp_df, f_constants < below_mean_std_vals[ind] & f_constants > below_mean_std_vals[ind + 1])
+            filter_list[[ind]] <- dplyr::filter(temp_df, f_const_mean < below_mean_std_vals[ind] & f_const_mean > below_mean_std_vals[ind + 1])
             
             below_mean_volumes[ind] <- sum(filter_list[[ind]]$Estim_tumor_vol) / sum(filter_list[[ind]]$mean_Volume)
             
@@ -1742,7 +1736,7 @@ correct_tumor_vol = function(estimated_tumor_volume_list, mean_f_values_list) {
         #Assign the tumor volume deviation above mean (in this case the tumor volumes are
         #under-estimated)
         for (ind in seq_along(above_mean_std_vals)) {
-            filter_list[[ind]] <- dplyr::filter(temp_df, f_constants > above_mean_std_vals[ind] & f_constants < above_mean_std_vals[ind + 1])
+            filter_list[[ind]] <- dplyr::filter(temp_df, f_const_mean > above_mean_std_vals[ind] & f_const_mean < above_mean_std_vals[ind + 1])
             
             above_mean_volumes[ind] <- sum(filter_list[[ind]]$Estim_tumor_vol) / sum(filter_list[[ind]]$mean_Volume)
             
@@ -1811,6 +1805,375 @@ correct_tumor_vol = function(estimated_tumor_volume_list, mean_f_values_list) {
 
 
 }
+
+
+correct_tumor_vol = function(estimated_tumor_volume_list, mean_f_values_list) {
+    ##Declare static function variables
+
+    #Initialize the return/output list
+    return_list <- vector(mode = "list", length = length(estimated_tumor_volume_list))
+
+    correction_factor_list <- vector(mode = "list", length = length(estimated_tumor_volume_list))
+
+
+    ##Assign the appropriate variables
+
+    temp_df <- data.frame()
+
+    #Assign the input list
+    input_list <- estimated_tumor_volume_list
+
+
+    ##Calculate the appropriate variables
+
+    for (index in seq_along(input_list)) {
+        ##Declare dynamic function variables
+
+        #Define a vector for the standard deviation bins
+        std_bin <- vector(mode = "numeric", length = 5)
+
+        #Define a vector containing the standard deviations of 0.5-2 SD below mean
+        below_mean_std_vals <- vector(mode = "numeric", length = 5)
+        names(below_mean_std_vals) <- as.character(seq(from = 0, to = 2, by = 0.5))
+
+        #Define a vector containing the standard deviations of 0.5-2 SD above mean
+        above_mean_std_vals <- vector(mode = "numeric", length = 5)
+        names(above_mean_std_vals) <- as.character(seq(from = 0, to = 2, by = 0.5))
+
+        #Define a vector containing the tumor volume deviation (in percentage) of 0.5-2 SD below mean
+        below_mean_volumes <- data.frame(matrix(nrow = 5, ncol = 2))
+        rownames(below_mean_volumes) <- as.character(seq(from = 0, to = 2, by = 0.5))
+        colnames(below_mean_volumes) <- paste0("vol_deviation", uCT_sampling_dates)
+
+        #Define a vector containing the tumor volume deviation (in percentage) of 0.5-2 SD above mean
+        above_mean_volumes <- data.frame(matrix(nrow = 5, ncol = 2))
+        rownames(above_mean_volumes) <- as.character(seq(from = 0, to = 2, by = 0.5))
+        colnames(below_mean_volumes) <- paste0("vol_deviation", uCT_sampling_dates)
+
+        #Define a dynamic filter_df
+        filter_list <- vector(mode = "list", length = 4)
+
+        #Define the standard deviation variable
+        temp_std <- vector(mode = "numeric", length = 1)
+        
+
+        ##Assign the dynamic function variables
+
+        #Assign the temp_df 
+        temp_df <- input_list[[index]]
+
+        estim_vols <- temp_df[, grep(pattern = "estim", x = colnames(temp_df), ignore.case = TRUE)]
+
+        uCT_vols <- temp_df[, grep(pattern = "uct", x = colnames(temp_df), ignore.case = TRUE)]
+
+        #Assign the standard deviation variable
+        temp_std <- sd(temp_df$f_const_mean)
+
+        #Assign the standard deviation fractions
+        std_bin <- seq(from = 0, to = 2, by = 0.5)
+
+        #Assign the standard deviations below mean (we start with 0 - the mean - and go down by half a sd compared to the mean)
+        below_mean_std_vals <- mean_f_values_list[[index]] - (temp_std * std_bin)
+        
+        #Assign the standard deviations above mean (we start with 0 - the mean - and go up by half a sd compared to the mean)
+        above_mean_std_vals <- mean_f_values_list[[index]] + (temp_std * std_bin)
+
+        #Assign the tumor volume deviation below mean (in this case the tumor volumes are
+        #over-estimated)
+        for (c in seq_len(ncol(estim_vols))) {
+            for (ind in seq_along(below_mean_std_vals)) {
+                filter_list[[ind]] <- dplyr::filter(temp_df, f_const_mean <= below_mean_std_vals[ind] & f_const_mean >= below_mean_std_vals[ind + 1])
+                
+                below_mean_volumes[ind, c] <- mean(filter_list[[ind]][, colnames(estim_vols)[c]], na.rm = TRUE) / mean(filter_list[[ind]][, colnames(uCT_vols)[c]], na.rm = TRUE)
+            
+            }
+
+        }
+        
+        #Assign the tumor volume deviation above mean (in this case the tumor volumes are
+        #under-estimated)
+        for (c in seq_along(estim_vols)) {
+            for (ind in seq_along(above_mean_std_vals)) {
+                filter_list[[ind]] <- dplyr::filter(temp_df, f_const_mean > above_mean_std_vals[ind] & f_const_mean < above_mean_std_vals[ind + 1])
+            
+                above_mean_volumes[ind, c] <- mean(filter_list[[ind]][, colnames(estim_vols)[c]], na.rm = TRUE) / mean(filter_list[[ind]][, colnames(uCT_vols)[c]], na.rm = TRUE)
+            
+            }
+
+        }
+        
+        #corrected_volumes <- vector(mode = "numeric", length = nrow(temp_df))
+        corrected_volumes <- data.frame(matrix(nrow = nrow(temp_df), ncol = 2))
+        correction_factors <- data.frame(matrix(nrow = nrow(temp_df), ncol = 2))
+
+        #Perform the value correction for values which f-constants are below the mean f-constant (in this case the tumor volumes are
+        #over-estimated). The outer for loop traverses the columns of the split off estimated_volumes dfs
+        for (c in seq_len(ncol(estim_vols))) {
+            
+            #The inner for loop traverses the columns of the temp_df (note: this is interchangeable with the estim_vols df as they have the same number of rows)
+            for (r in seq_len(nrow(temp_df))) {
+ 
+                #The innermost for-loop traverses the standard deviation values of f-constants below the mean f-constant (the SD here is calculated for the 
+                #f-constants and brackets of 0(mean)-0.5-1-1.5-2 SD are used)
+                for (e in seq_len(length(below_mean_std_vals) - 1)) {
+
+                    #An if statement to control which correction factor (this is volume parentage of the estimated volume compared to the measured volume)
+                    #should be used, based on which f-constant bracket the sample falls into
+                    if (temp_df$f_const_mean[r] <= below_mean_std_vals[e] && temp_df$f_const_mean[r] >= below_mean_std_vals[e + 1]) {
+
+                        #Perform the correction by dividing the estimated tumor volume with the correction factor (the percentage of over or under estimation
+                        #as a function of the f-constant deviation) and assign the corrected values into a new dataframe
+                        corrected_volumes[r, c] <- temp_df[r, colnames(estim_vols)[c]] / below_mean_volumes[e, c]
+                        correction_factors[r, c] <- below_mean_volumes[e, c]
+
+                    }
+                
+                }
+
+            }
+            
+        }
+
+        #Perform the value correction for values which f-constants are above the mean f-constant (in this case the tumor volumes are
+        #under-estimated). The outer for loop traverses the columns of the split off estimated_volumes dfs
+        for (c in seq_len(ncol(estim_vols))) {
+            
+            #The inner for loop traverses the columns of the temp_df (note: this is interchangeable with the estim_vols df as they have the same number of rows)
+            for (r in seq_len(nrow(temp_df))) {
+
+                #The innermost for-loop traverses the standard deviation values of f-constants below the mean f-constant (the SD here is calculated for the 
+                #f-constants and brackets of 0(mean)-0.5-1-1.5-2 SD are used)
+                for (e in seq_len(length(above_mean_std_vals) - 1)) {
+
+                    #An if statement to control which correction factor (this is volume parentage of the estimated volume compared to the measured volume)
+                    #should be used, based on which f-constant bracket the sample falls into
+                    if (temp_df$f_const_mean[r] >= above_mean_std_vals[e] && temp_df$f_const_mean[r] <= above_mean_std_vals[e + 1]) {
+
+                        #Perform the correction by dividing the estimated tumor volume with the correction factor (the percentage of over or under estimation
+                        #as a function of the f-constant deviation) and assign the corrected values into a new daraframe
+                        corrected_volumes[r, c] <- temp_df[r, colnames(estim_vols)[c]] / above_mean_volumes[e, c]
+                        correction_factors[r, c] <- above_mean_volumes[e, c]
+
+                    }
+                
+                }
+
+            }
+            
+            
+        }
+
+        
+
+        correction_factor_list[[index]] <- correction_factors
+        correction_factor_lst <<- correction_factor_list
+
+    
+        temp_df <- cbind(temp_df, corrected_volumes)
+        return_list[[index]] <- temp_df
+
+        
+        
+        
+        
+
+    }
+
+    
+    
+    ## Return the output list
+    return(return_list)
+    
+
+
+
+}
+
+
+
+
+
+
+
+
+        #Perform the value correction for values which f-constants are below the mean f-constant (in this case the tumor volumes are
+        #over-estimated). The outer for loop traverses the rows of the temp_df
+        for (i in seq_len(nrow(temp_df))) {
+            
+            #The inner for-loop traverses the standard deviation values of f-constants below the mean f-constant (the SD here is calculated for the 
+            #f-constants and brackets of 0(mean)-0.5-1-1.5-2 SD are used)
+            for (e in seq_along(below_mean_std_vals)) {
+                
+                #An if statement to control which correction factor (his is volume parentage of the estimated volume compared to the measured volume)
+                #should be used, based on which f-constant bracket the sample falls into
+                if (temp_df$f_constants[i] < below_mean_std_vals[e] && temp_df$f_constants[i] > below_mean_std_vals[e + 1]) {
+                    
+                    #Perform the correction by dividing the estimated tumor volume with the correction factor (the percentage of over or under estimation
+                    #as a function of the f-constant deviation) and assign the corrected values into a new column
+                    temp_df$Corrected_tumor_vol[i] <- temp_df$Estim_tumor_vol[i] / below_mean_volumes[e]
+
+                    #assign the correction factors into a new column
+                    temp_df$Correction_factor[i] <- below_mean_volumes[e]
+                }
+
+            }
+            
+        }
+
+        #Perform the value correction for values which f-constants are above the mean f-constant (in this case the tumor volumes are
+        #under-estimated). The outer for loop traverses the rows of the temp_df
+        for (i in seq_len(nrow(temp_df))) {
+            
+            #The inner for-loop traverses the standard deviation values of f-constants above the mean f-constant (the SD here is calculated for the 
+            #f-constants and brackets of 0(mean)-0.5-1-1.5-2 SD are used)
+            for (e in seq_along(above_mean_std_vals)) {
+                
+                #An if statement to control which correction factor (his is volume parentage of the estimated volume compared to the measured volume)
+                #should be used, based on which f-constant bracket the sample falls into
+                if (temp_df$f_constants[i] > above_mean_std_vals[e] && temp_df$f_constants[i] < above_mean_std_vals[e + 1]) {
+                    
+                    #Perform the correction by dividing the estimated tumor volume with the correction factor (the percentage of over or under estimation
+                    #as a function of the f-constant deviation) and assign the corrected values into a new column
+                    temp_df$Corrected_tumor_vol[i] <- temp_df$Estim_tumor_vol[i] / above_mean_volumes[e]
+
+                    #assign the correction factors into a new column
+                    temp_df$Correction_factor[i] <- above_mean_volumes[e]
+                }
+
+            }
+            
+        }
+
+        
+        ##Add the temporary, modified dataframes to the return list
+        return_list[[index]] <- temp_df
+
+
+
+
+
+corrected_volumes <- vector()
+        correction_factor <- vector
+
+        #Perform the value correction for values which f-constants are below the mean f-constant (in this case the tumor volumes are
+        #over-estimated). The outer for loop traverses the rows of the temp_df
+        for (c in seq_len(ncol(estim_vols))) {
+            
+            #The inner for-loop traverses the standard deviation values of f-constants below the mean f-constant (the SD here is calculated for the 
+            #f-constants and brackets of 0(mean)-0.5-1-1.5-2 SD are used)
+            for (e in seq_along(below_mean_std_vals)) {
+
+                for (r in seq_len(nrow(estim_vols))) {
+                    #An if statement to control which correction factor (this is volume parentage of the estimated volume compared to the measured volume)
+                    #should be used, based on which f-constant bracket the sample falls into
+                    if (temp_df$f_const_mean[r] < below_mean_std_vals[e] && temp_df$f_const_mean[r] > below_mean_std_vals[e + 1]) {
+                    
+                    #Perform the correction by dividing the estimated tumor volume with the correction factor (the percentage of over or under estimation
+                    #as a function of the f-constant deviation) and assign the corrected values into a new column
+                    corrected_volumes[r] <- temp_df[, colnames(estim_vols)[c]][r] / below_mean_volumes[e, c]
+                    #temp_df <- cbind(temp_df, corrected_volumes)
+
+                    #assign the correction factors into a new column
+                    #correction_factor[i] <- below_mean_volumes[e]
+                    #temp_df <- cbind(temp_df, correction_factor)
+                }
+                
+                
+                }
+
+            }
+            
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(unif_m_estvol[[2]]), pattern = "_[0-9\\.]+")))
+
+temp_uCT_vol <- unif_m_estvol[[2]][, grep(pattern = "uct", x = colnames(unif_m_estvol[[2]]), ignore.case = TRUE)]
+temp_est_vol <- unif_m_estvol[[2]][, grep(pattern = "estim", x = colnames(unif_m_estvol[[2]]), ignore.case = TRUE)]
+
+overest <- dplyr::filter(unif_m_estvol[[2]], temp_est_vol[, 1] > temp_uCT_vol[, 1])
+underest <- dplyr::filter(unif_m_estvol[[2]], temp_est_vol[, 1] < temp_uCT_vol[, 1])
+
+overest_est <- overest[, grep(pattern = "estim", x = colnames(overest), ignore.case = TRUE)]
+underest_est <- underest[, grep(pattern = "estim", x = colnames(underest), ignore.case = TRUE)]
+
+temp_uCT_mean_over <- as.numeric(sapply(overest[, grep(pattern = "uct", x = colnames(overest), ignore.case = TRUE)], mean))
+temp_uCT_std_over <- as.numeric(sapply(overest[, grep(pattern = "uct", x = colnames(overest), ignore.case = TRUE)], sd))
+
+temp_uCT_mean_under <- as.numeric(sapply(underest[, grep(pattern = "uct", x = colnames(underest), ignore.case = TRUE)], mean))
+temp_uCT_std_under <- as.numeric(sapply(underest[, grep(pattern = "uct", x = colnames(underest), ignore.case = TRUE)], sd))
+
+
+std_bins <- seq(from = 0, to = 2, by = 0.5)
+
+filter_list <- list()
+
+above_mean_std_volumes <- data.frame()
+
+for (c in seq_along(temp_uCT_mean_over)) {
+    for (r in seq_along(std_bins)) {
+        above_mean_std_volumes[r, c] <- temp_uCT_mean_over[c] + (temp_uCT_std_over[c] * std_bins[r])
+    }
+}
+colnames(above_mean_std_volumes) <- colnames(temp_uCT_vol)
+
+
+for (c in seq_along(sampling_dates)) {
+    for (r in seq_len(nrow(above_mean_std_volumes))) {
+        if (overest_est[r, c] >= above_mean_std_volumes[r, c] && overest_est[r, c] <= above_mean_std_volumes[r + 1, c]) {
+            print("TRUE")
+            print(overest_est[r, c])
+        } 
+        #dplyr::filter(overest_est, overest_est[r, c] >= above_mean_std_volumes[c] & overest_est[r, c] <= above_mean_std_volumes[r + 1, c])
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
