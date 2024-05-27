@@ -1988,7 +1988,7 @@ calculate_correction_matrix = function(correction_factor_lst) {
 
         for (r in seq_len(nrow(temp_corr_df))) {
             corr_factor_matrix[r, ] <- seq(from = temp_corr_df[r, 1], to = temp_corr_df[r, 2], by = (temp_corr_df[r, 2] - temp_corr_df[r, 1]) / (n_calip_measurements - 1))
-            #print(seq(from = temp_corr_df[r, 1], to = temp_corr_df[r, 2], by = (temp_corr_df[r, 2] - temp_corr_df[r, 1]) / (n_calip_measurements - 1)))
+            
         }
 
         output_list[[index]] <- corr_factor_matrix
@@ -2171,7 +2171,7 @@ rebind_tumor_volumes = function(corrected_final_volume_lst, caliper_lst, remove_
 }
 
 
-
+#################################################               Section end             #################################################
 
 
 
