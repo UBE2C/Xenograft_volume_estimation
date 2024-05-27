@@ -1779,7 +1779,6 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list)
                     #An if statement to control which correction factor (this is volume parentage of the estimated volume compared to the measured volume)
                     #should be used, based on which f-constant bracket the sample falls into
                     if (temp_df$f_const_mean[r] <= below_mean_std_vals[e] && temp_df$f_const_mean[r] >= below_mean_std_vals[e + 1]) {
-
                         #Perform the correction by dividing the estimated tumor volume with the correction factor (the percentage of over or under estimation
                         #as a function of the f-constant deviation) and assign the corrected values into a new dataframe
                         corrected_volumes[r, c] <- temp_df[r, colnames(estim_vols)[c]] / below_mean_volumes[e, c]
@@ -1807,7 +1806,6 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list)
                     #An if statement to control which correction factor (this is volume parentage of the estimated volume compared to the measured volume)
                     #should be used, based on which f-constant bracket the sample falls into
                     if (temp_df$f_const_mean[r] >= above_mean_std_vals[e] && temp_df$f_const_mean[r] <= above_mean_std_vals[e + 1]) {
-
                         #Perform the correction by dividing the estimated tumor volume with the correction factor (the percentage of over or under estimation
                         #as a function of the f-constant deviation) and assign the corrected values into a new daraframe
                         corrected_volumes[r, c] <- temp_df[r, colnames(estim_vols)[c]] / above_mean_volumes[e, c]
@@ -1829,7 +1827,7 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list)
         
 
         #Name the columns of the corrected volumes dataframe
-        colnames(corrected_volumes) <- paste0("Corr_volumes", uCT_sampling_dates)
+        colnames(corrected_volumes) <- paste0("Corr_volume", uCT_sampling_dates)
 
         #Bind the corrected volumes dataframe to the temp_df
         temp_df <- cbind(temp_df, corrected_volumes)
@@ -1857,8 +1855,91 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list)
 
 
 
+## Test the corrected volumes using a goodness of fit test
+gof_test = function(measurement_list, correction = TRUE) {
+    ##Define the static function variables
 
+    #Initialize the p_value output list
+    p_val_out_list <- vector(mode = "list", length = length(measurement_list))
 
+    #This loop will traverse the input measurements list
+    for (index in seq_along(measurement_list)) {
+        ##Define the dynamic function variables
+
+        #Initialize a new temporary df containing all the volume columns
+        temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
+
+        #An if statement controlling which values should be compared the corrected or the normal estimated
+        if (correction == TRUE) {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the corrected estimated volumes
+            temp_corr_df <- temp_vol_df[, grep(pattern = "corr", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
+            
+            #Initialize the contingency table variable
+            cont_table <- data.frame(matrix(nrow = length(uCT_sampling_dates), ncol = nrow(temp_vol_df)))
+
+            #Initialize the dataframe which will hold the calculated p-values
+            chi_sqr_p <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the contingency table by grabbing the uCT and corrected estimated volumes by the dates
+                cont_table <- t(temp_comp_df[, grep(pattern = date, x = colnames(temp_comp_df))])
+
+                #Run the Chi-square test on the cont table and assign the p-values to the corresponding dataframe
+                chi_sqr_p[, date] <- chisq.test(cont_table)$p.value
+                
+            }
+
+        } else {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the estimated volumes
+            temp_est_df <- temp_vol_df[, grep(pattern = "est", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_est_df)
+            
+            #Initialize the contingency table variable
+            cont_table <- data.frame(matrix(nrow = length(uCT_sampling_dates), ncol = nrow(temp_vol_df)))
+
+            #Initialize the dataframe which will hold the calculated p-values
+            chi_sqr_p <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the contingency table by grabbing the uCT and corrected estimated volumes by the dates
+                cont_table <- t(temp_comp_df[, grep(pattern = date, x = colnames(temp_comp_df))])
+
+                #Run the Chi-square test on the cont table and assign the p-values to the corresponding dataframe
+                chi_sqr_p[, date] <- chisq.test(cont_table)$p.value
+                
+            }
+
+        }
+
+        #Assign the appropriate colnames to the p-value columns
+        colnames(chi_sqr_p) <- paste0("chi_sqr_p-val", uCT_sampling_dates)
+
+        #Assign the p-value containing dataframes to the output list
+        p_val_out_list[[index]] <- chi_sqr_p
+
+    }
+
+    #Assign the proper list element names to the output list
+    names(p_val_out_list) <- names(measurement_list)
+    
+
+    ##Return the output list
+    return(p_val_out_list)
+
+}
 
 
 
