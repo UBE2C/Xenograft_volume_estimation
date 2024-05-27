@@ -146,7 +146,7 @@ dir_management = function(input_1 = NULL, input_2 = NULL) {
 }
 
 
-################################################# Section end #################################################
+#################################################               Section end             #################################################
 
 
 
@@ -165,7 +165,7 @@ dir_management = function(input_1 = NULL, input_2 = NULL) {
 dir_management()
 
 
-################################################# Section end #################################################
+#################################################               Section end             #################################################
 
 
 
@@ -222,7 +222,7 @@ arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = 
                                     convert_hyphens_to_underscores = FALSE)
 
 
-################################################# Section end #################################################
+#################################################               Section end             #################################################
 
 
 
@@ -388,6 +388,9 @@ read_caliper_data = function(data_path, separator) {
 
     }
 
+    #Assign the number of caliper measurements to the global environment
+    n_calip_measurements <<- length(grep(pattern = "lxw", x = colnames(calip_list[[1]]), ignore.case = TRUE))
+
     #Name the elements of the caliper_measurements list based on the original processed I/O files
     names(caliper_measurements) <- processed_caliper_file_names
 
@@ -398,7 +401,7 @@ read_caliper_data = function(data_path, separator) {
 }
 
 
-################################################# Section end #################################################
+#################################################               Section end             #################################################
 
 
 
@@ -515,7 +518,7 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
 }
 
 
-################################################# Section end #################################################
+#################################################               Section end             #################################################
 
 
 
@@ -640,7 +643,7 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list) {
 }
 
 
-################################################# Section end #################################################
+#################################################               Section end             #################################################
 
 
 
@@ -1549,7 +1552,7 @@ outlier_detector = function(calculate_f_constants_output_list, is_data_normal_ou
 }
 
 
-################################################# Section end #################################################
+#################################################               Section end             #################################################
 
 
 
@@ -1649,7 +1652,7 @@ estimate_tumor_volume = function(input_measurement_list, mean_f_values_list) {
 }
 
 
-################################################# Section end #################################################
+#################################################               Section end             #################################################
 
 
 
@@ -1942,209 +1945,48 @@ gof_test = function(measurement_list, correction = TRUE) {
 }
 
 
+#################################################               Section end             #################################################
 
 
 
 
 
+################################################         MARK: calculate the correction factors,        #################################################
+                                               #       calculate and correct the caliper measurements   #
 
 
 
 
+## Calculate the correction factor matrix for the pure caliper measurements data
+calculate_correction_matrix = function(correction_factor_lst) {
+    ##Define function variables
 
+    #Initialize the output list
+    output_list <- vector(mode = "list", length = length(correction_factor_lst))
 
+    for (index in seq_along(correction_factor_lst)) {
+        ##Define the dynamic function variables
 
+        #Initialize the current list element dataframe
+        temp_corr_df <- correction_factor_lst[[index]]
 
+        #Initialize the correction factor matrix
+        corr_factor_matrix <- data.frame(matrix(nrow = nrow(temp_corr_df), ncol = n_calip_measurements))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Test the goodness of fit with the estimated Volumes
-cont_table <- t(f_constants[, c(3, 7)])
-colnames(cont_table) <- f_constants$Mouse.ID
-
-cs <- chisq.test(cont_table)
-
-corr_f <- vector(mode = "numeric")
-repeats <- 1
-est_V <- vector(mode = "numeric")
-if (cs$p.value < 0.05) {
-    while (cs$p.value < 0.05) {
-        mean_f <- mean_f - 0.1
-
-        for (i in seq_len(nrow(f_constants))) {
-            est_V[i] <- (pi/6) * mean_f * (f_constants$L[i] * f_constants$W[i])^(3/2)
-            #print((pi / 6) * 1 * (f_constants$L[i] * f_constants$W[i])^(3 / 2))
-
+        for (r in seq_len(nrow(temp_corr_df))) {
+            corr_factor_matrix[r, ] <- seq(from = temp_corr_df[r, 1], to = temp_corr_df[r, 2], by = (temp_corr_df[r, 2] - temp_corr_df[r, 1]) / (n_calip_measurements - 1))
+            #print(seq(from = temp_corr_df[r, 1], to = temp_corr_df[r, 2], by = (temp_corr_df[r, 2] - temp_corr_df[r, 1]) / (n_calip_measurements - 1)))
         }
 
-        cs <- chisq.test(x = rbind(f_constants$Tumor.volume..mm3., est_V))
-        print(cs$p.value)
-        repeats <- repeats + 1
-
-        if (repeats >= 100) {
-            break
-        }
-
-    }
-}
-
-
-
-
-## Test the whole process with all of the late control measurements
-
-
-# Add the actual caliper measurement dates to the uCT_volumes DF
-uCT_volumes <- mutate(.data = uCT_volumes,
-                Date_calip = c("03.03.2024", "03.03.2024", "03.03.2024", "21.02.2024", "21.02.2024", "21.02.2024", "21.02.2024"),
-                .before = Comments)
-
-# Trim the caliper measurements to all the uCT entries based on date
-ctrl_caliper <- list()
-temp_df <- data.frame()
-for (i in seq_len(length(caliper_measurements))) {
-    for (e in seq_len(length(unique(uCT_volumes$Date_calip)))) {
-        temp_df <- caliper_measurements[[i]][grep(pattern = unique(uCT_volumes$Date_calip)[e], x = caliper_measurements[[i]]$Dates), ]
-        if (nrow(temp_df) > 0) {
-        ctrl_caliper[[i]] <- temp_df
-
-    }
+        output_list[[index]] <- corr_factor_matrix
     }
     
-}
+    #Name the output list elements according to the input list
+    names(output_list) <- names(correction_factor_lst)
 
 
-# Trim the caliper measurements to all the uCT entries based on mouse ID
-for (i in seq_len(length(unique(uCT_volumes$X)))) {
-    if (grepl(pattern = "G1", x = unique(uCT_volumes$X)[i])) {
-        ctrl_caliper[[1]] <- ctrl_caliper[[1]][, uCT_volumes$Mouse.ID[grep(pattern = "G1", uCT_volumes$X)]]
-    } else {
-        ctrl_caliper[[2]] <- ctrl_caliper[[2]][, uCT_volumes$Mouse.ID[grep(pattern = "G2", uCT_volumes$X)]]
-    }
-}
-
-
-# Bind the two ctrl caliper DFs together
-ctrl_caliper_df <- data.frame()
-ctrl_caliper_df <- do.call(cbind, ctrl_caliper)
-rownames(ctrl_caliper_df) <- c("L", "W")
-
-
-# Create a unified DF
-unified_df <- cbind(uCT_volumes[, c(5, 2, 4)], t(ctrl_caliper_df))
-
-
-# Calculate the f for the full used ctrl set
-for (i in seq_len(nrow(unified_df))) {
-    unified_df$calc_f[i] <- unified_df$Tumor.volume..mm3.[i] / ((pi / 6) * (unified_df$L[i] * unified_df$W[i])^(3 / 2))
-
-}
-
-
-
-
-## Remove the outliers and calculate the mean
-
-
-# Remove the outliers using Grubb's test (part of the outlier package)
-full_calc_f_values <- unified_df$calc_f
-
-for (i in seq_len(length(full_calc_f_values))) {
-    grubbs_res_lower <- outliers::grubbs.test(full_calc_f_values)
-
-    if (grubbs_res_lower$p.value < 0.05) {
-        lower_outlier <- stringr::str_extract(grubbs_res_lower$alternative, "[0-9]+\\.[0-9]+")
-        match_l_indices <- grep(pattern = lower_outlier, x = as.character(full_calc_f_values))
-        
-        if (length(match_l_indices) > 0) {
-            message("The following lower outliers will be removed: ", match_l_indices)
-            full_calc_f_values <- full_calc_f_values[-match_l_indices]
-        }
-    } else {
-        message("No significant outlier found on the left tail.")
-
-    }
-
-    grubbs_res_upper <- outliers::grubbs.test(full_calc_f_values, opposite = TRUE)
-
-    if (grubbs_res_upper$p.value < 0.05) {
-        upper_outlier <- stringr::str_extract(grubbs_res_upper$alternative, "[0-9]+\\.[0-9]+")
-        match_u_indices <- grep(pattern = upper_outlier, x = as.character(full_calc_f_values))
-        
-        if (length(match_u_indices) > 0) {
-            message("The following lower outliers will be removed: ", match_u_indices)
-            full_calc_f_values <- full_calc_f_values[-match_u_indices]
-        }
-    } else {
-        message("No significant outlier found on the right tail.")
-
-    }
-
-}
-
-
-# Calculate the mean f and re-estimate the tumor volumes with the mean_f for the full ctrl set
-full_mean_f <- mean(unified_df$calc_f)
-
-for (i in seq_len(nrow(unified_df))) {
-    #f_constants$est_V[i] <- (pi/6) * mean_f * (f_constants$L[i] * f_constants$W[i])^(3/2)
-    unified_df$estim_Vol[i] <- (pi / 6) * full_mean_f * (unified_df$L[i] * unified_df$W[i])^(3 / 2)
+    ##Return the output list
+    return(output_list)
 
 }
 
@@ -2160,9 +2002,51 @@ for (i in seq_len(nrow(unified_df))) {
 
 
 
-# Calculate the squared distances from the mean
-sq_distances <- vector(mode = "numeric", length = nrow(f_constants))
-for (i in seq_len(nrow(f_constants))) {
-    sq_distances[i] <- (mean_f - f_constants$calc_f[i])^2
 
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
