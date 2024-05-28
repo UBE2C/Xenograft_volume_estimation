@@ -24,7 +24,7 @@
 
 
 # The list of required packages
-CRAN_packages <- c("tidyverse", "optparse", "this.path", "outliers", "ggpubr")
+CRAN_packages <- c("tidyverse", "optparse", "this.path", "outliers", "ggpubr", "ggsci")
 
 
 # A function to check and install packages
@@ -2177,29 +2177,123 @@ rebind_tumor_volumes = function(corrected_final_volume_lst, caliper_lst, remove_
 
 
 
+################################################         MARK: data plotting        #################################################
+                                               #                                     #
 
 
 
 
+## QC plotting - plot the estimated and corrected volumes against the measured volumes
+create_qc_plots = function(unified_list, remove_uct_na_samples = TRUE) {
+    ##Define static function variables
+
+    #Initialize the output plot list
+    output_plots_list <- vector(mode = "list", length = length(unified_list))
 
 
+    for (index in seq_along(unified_list)) {
+        ##Define dynamic function variables
+
+        #Initialize a variable holding the currently processed list element (dataframe)
+        temp_df <- unified_list[[index]]
+
+        #Initialize a variable holding only the volumes
+        temp_vol_df <- temp_df[, grep(pattern = "volume", x = colnames(temp_df), ignore.case = TRUE)]
 
 
+        ##Processing
 
+        #An if statement controlling the downstream processing based on if a correction was made
+        if (remove_uct_na_samples == TRUE) {
+            #Prepare the uCT and estimated volumes for plotting by binding the desired columns together
+            plot_df_corr <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+            plot_df_corr <- cbind(temp_df$Mouse_ID, plot_df_corr, temp_vol_df[, grep(pattern = "corr", x = colnames(temp_vol_df), ignore.case = TRUE)])
+            colnames(plot_df_corr)[1] <- "Mouse_ID"
 
+            #Initialize a new variable containing the unique sampling dates for a given dataframe
+            dates <- unique(as.character(stringr::str_extract_all(string = colnames(temp_vol_df), pattern = "[0-9\\.0-9]+$", simplify = TRUE)))
 
+            #Initialize a name vector for the plots
+            plot_names <- vector(mode = "character", length = length(dates))
+            for (item in seq_along(dates)) {
+                plot_names[item] <- paste0("plot_", dates[item])
+            }
 
+            #Plot the comparison data of each sampling date
+            plot_list <- vector(mode = "list", length = length(dates))
+            for (date in seq_along(dates)) {
 
+                plot_df <- plot_df_corr[, c(1, grep(pattern = dates[date], x = colnames(plot_df_corr), ignore.case = TRUE))]
+                colnames(plot_df)[2:3] <- c("uct", "corr")
+                
+                plot <- ggplot2::ggplot(data = plot_df,
+                        mapping = aes(x = uct, y = corr,  color = Mouse_ID)) +
+                        ggsci::scale_color_futurama() +
+                        ggplot2::geom_point() +
+                        ggplot2::stat_smooth(method = "lm", formula = y ~ x, col = "red", alpha = 0.1) +
+                        ggplot2::ggtitle(paste0(names(unified_list)[[index]], "_", plot_names[date])) +
+                        ggplot2::labs(x = expression("uCT volumes mm"^3), y = expression("Corrected volumes mm"^3),
+                                color = expression("Mouse IDs")) +
+                        ggplot2::theme_classic() +
+                        ggplot2::theme(plot.title = element_text(hjust = 0.5))
 
+                plot_list[[date]] <- plot
+            }
 
+            names(plot_list) <- plot_names
 
+            output_plots_list[[index]] <- plot_list
 
+        } else {
+            #Prepare the uCT and estimated volumes for plotting by binding the desired columns together
+            plot_df_est <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+            plot_df_est <- cbind(temp_df$Mouse_ID, plot_df_est, temp_vol_df[, grep(pattern = "estim", x = colnames(temp_vol_df), ignore.case = TRUE)])
+            colnames(plot_df_est)[1] <- "Mouse_ID"
 
+            #Initialize a new variable containing the unique sampling dates for a given dataframe
+            dates <- unique(as.character(stringr::str_extract_all(string = colnames(temp_vol_df), pattern = "[0-9\\.0-9]+$", simplify = TRUE)))
 
+            #Initialize a name vector for the plots
+            plot_names <- vector(mode = "character", length = length(dates))
+            for (item in seq_along(dates)) {
+                plot_names[item] <- paste0("plot_", dates[item])
+            }
 
+            #Plot the comparison data of each sampling date
+            plot_list <- vector(mode = "list", length = length(dates))
+            for (date in seq_along(dates)) {
 
+                plot_df <- plot_df_est[, c(1, grep(pattern = dates[date], x = colnames(plot_df_est), ignore.case = TRUE))]
+                colnames(plot_df)[2:3] <- c("uct", "estim")
+                
+                plot <- ggplot2::ggplot(data = plot_df,
+                        mapping = aes(x = uct, y = estim,  color = Mouse_ID)) +
+                        ggsci::scale_color_futurama() +
+                        ggplot2::geom_point() +
+                        ggplot2::stat_smooth(method = "lm", formula = y ~ x, col = "red", alpha = 0.1) +
+                        ggplot2::ggtitle(paste0(names(unified_list)[[index]], "_", plot_names[date])) +
+                        ggplot2::labs(x = expression("uCT volumes mm"^3), y = expression("Estimated volumes mm"^3),
+                                color = expression("Mouse IDs")) +
+                        ggplot2::theme_classic() +
+                        ggplot2::theme(plot.title = element_text(hjust = 0.5))
 
+                plot_list[[date]] <- plot
+            }
 
+            names(plot_list) <- plot_names
+
+            output_plots_list[[index]] <- plot_list
+
+        }
+        
+        
+    }
+
+    names(output_plots_list) <- names(unified_list)
+
+    return(output_plots_list)
+
+}
 
 
 
