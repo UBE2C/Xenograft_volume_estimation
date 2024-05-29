@@ -62,18 +62,16 @@ package_loader = function(packages = CRAN_packages) {
 ## Define the paths for the script and I/O files
 
 
-# Define the path to the directory this script is in
+# Define the main path to the directory this script is in
+# NOTE: Unless specified otherwise this directory will be used adn an I/O directory
 script_dir_path <- this.path::here()
 setwd(script_dir_path)
 
 # Define the preferred input directory path
-pref_input_path <- paste0(script_dir_path, "/", "Input_files")
-
-# Define the preferred path to the intermediate input/output file directory 
-pref_output_path <- paste0(script_dir_path, "/", "Intermediate_IO")
+input_path <- paste0(script_dir_path, "/", "Input_files")
 
 # Define the preferred final output directory path  for later use
-final_output_path <- paste0(script_dir_path, "/", "Final_output_files")
+output_path <- paste0(script_dir_path, "/", "Output_files")
 
 # Directory management function
 # This function will look for the preferred input and output libraries and will create them if they are missing upon user request
@@ -81,7 +79,7 @@ dir_management = function(input_1 = NULL, input_2 = NULL) {
     ##Define the function variables
     
     #Declare a vector containing the preferred directory paths
-    dir_paths <- c(pref_input_path, pref_output_path, final_output_path)
+    dir_paths <- c(input_path, output_path)
     
     #This for loop will traverse the directory paths vector to feed the paths to the if statement below
     for (path in dir_paths) {
@@ -129,10 +127,10 @@ dir_management = function(input_1 = NULL, input_2 = NULL) {
     #An if statement to set the the default input and output paths to the preferred ones if they exists
     if (dir.exists(dir_paths[1]) == TRUE && dir.exists(dir_paths[2]) == TRUE) {
         # Define the preferred input directory path
-        assign("def_input_path", pref_input_path, envir = parent.frame())
+        assign("def_input_path", input_path, envir = parent.frame())
 
         # Define the final output directory path
-        assign("def_output_path", pref_output_path, envir = parent.frame())
+        assign("def_output_path", output_path, envir = parent.frame())
 
     } else {
         # Define the input directory path
@@ -160,7 +158,7 @@ dir_management = function(input_1 = NULL, input_2 = NULL) {
 
 
 ## Calling the directory management function 
-## NOTE: tis function must be called before the option parsing, so it can properly assign and modify the input and output directories
+## NOTE: tis function must be called before the option parsing and main function, so it can properly assign and modify the input and output directories
 ## before the options parsing happens!
 dir_management()
 
@@ -175,9 +173,6 @@ dir_management()
 ################################################# MARK: CLI arguments #################################################
                                                 #                     #
 
-
-## Define the default output file names
-def_output_name <- "not_defined_yet"
 
 
 
@@ -201,11 +196,11 @@ options_list <- list(
 
     optparse::make_option(opt_str = c("-q", "--quiet"), action = "store_true", default = FALSE, dest = "quiet"),
 
-    optparse::make_option(opt_str = c("-np", "--nonparam_test"), default = "numeric_outlier_test"),
+    optparse::make_option(opt_str = c("-t", "--nonparam_test"), default = "numeric_outlier_test"),
 
-    optparse::make_option(opt_str = c("-ol", "--outlier_handling"), default = "detect"),
+    optparse::make_option(opt_str = c("--outlier_handling"), default = "detect"),
 
-    optparse::make_option(opt_str = c("-cr", "--correction"))
+    optparse::make_option(opt_str = c("--correction"))
 
 )
 
@@ -2338,15 +2333,30 @@ plot_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
 }
 
 
+#################################################               Section end             #################################################
 
 
 
 
 
+################################################         MARK: Define the main function        #################################################
+                                               #                                               #
 
 
 
+## The main function which will be called when the program is launched
+main = function(input_path, sep = ";") {
+    ##Call the package management functions
+    package_loader()
+    package_controller()
 
+
+    ##Load the required data
+    uct_data <- read_uCT_data(data_path = input_path, separator = sep)
+    caliper_data <- read_caliper_data(data_path = input_path, separator = sep)
+
+    
+}
 
 
 
