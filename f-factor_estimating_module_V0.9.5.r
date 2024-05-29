@@ -2124,6 +2124,9 @@ correct_final_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
 
     }
 
+    #Name the output list elements based on the input list element names
+    names(output_list) <- names(final_tumor_volume_lst)
+
 
     ##Return the output list
     return(output_list)
@@ -2226,13 +2229,19 @@ create_qc_plots = function(unified_list, remove_uct_na_samples = TRUE) {
                 plot_names[item] <- paste0("plot_", dates[item])
             }
 
-            #Plot the comparison data of each sampling date
+            #Initialize a new variable which will contain each individual plots for each dataframe
             plot_list <- vector(mode = "list", length = length(dates))
-            for (date in seq_along(dates)) {
 
+            #This for loop will traverse the unique sampling dates to plot each date separatley (due to volume differences)
+            for (date in seq_along(dates)) {
+            
+                #Initialize a new variable to contain the dataframes transformed for lotting
                 plot_df <- plot_df_est[, c(1, grep(pattern = dates[date], x = colnames(plot_df_est), ignore.case = TRUE))]
+               
+                #Name the x and y corresponding columns for ggplot
                 colnames(plot_df)[2:3] <- c("uct", "estim")
                 
+                #Plot the dataframe
                 plot <- ggplot2::ggplot(data = plot_df,
                         mapping = aes(x = uct, y = estim,  color = Mouse_ID)) +
                         ggsci::scale_color_futurama() +
@@ -2244,11 +2253,14 @@ create_qc_plots = function(unified_list, remove_uct_na_samples = TRUE) {
                         ggplot2::theme_classic() +
                         ggplot2::theme(plot.title = element_text(hjust = 0.5))
 
+                #Assing the plot to the plot list
                 plot_list[[date]] <- plot
             }
 
+            #Name the elements of the plot list base don the plot names
             names(plot_list) <- plot_names
-
+            
+            #Assign the plot list to the output plot list
             output_plots_list[[index]] <- plot_list
 
         }
@@ -2256,8 +2268,11 @@ create_qc_plots = function(unified_list, remove_uct_na_samples = TRUE) {
         
     }
 
+    #Name the elements (sub lists) of the final output lists
     names(output_plots_list) <- names(unified_list)
 
+
+    #Return the final output list
     return(output_plots_list)
 
 }
@@ -2266,7 +2281,7 @@ create_qc_plots = function(unified_list, remove_uct_na_samples = TRUE) {
 
 
 ## Create growth curves based on the estimated and corrected volumes
-create_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
+plot_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
     ##Declare static function variables
 
     #Initialize the output plot list
@@ -2275,14 +2290,51 @@ create_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
 
     ##Calsuclations
 
+    #This loop will traverse the input file list and splits off each element for processing
     for (index in seq_along(final_vol_lst)) {
         ##Declare dynamic function variables
 
         #Initialize a datafame holding the currently processed dataframe
         temp_df <- final_vol_lst[[index]]
 
-        temp_vol_df <- 
+        #Transform the volume dateframes to a long format
+        lng_temp_df <- tidyr::pivot_longer(data = temp_df, cols = seq(from = 4, to = ncol(temp_df)), names_to = "Full_sample_IDs", values_to = "Volumes")
+
+        #Initialize a new variable containing the sampling dates for a given dataframe
+        dates <- as.character(stringr::str_extract_all(string = lng_temp_df$Full_sample_IDs, pattern = "[0-9\\.0-9]+$", simplify = TRUE))
+
+        #Initialize a new variable containing the unique sampling dates for a given dataframe 
+        unique_dates <- unique(dates)
+
+        #Initialize a new variable containing the tumor volume type (estimated or corrected)
+        vol_type <- as.character(stringr::str_extract_all(string = lng_temp_df$Full_sample_IDs, pattern = "^[a-zA-Z]+", simplify = TRUE))
+
+        #Amend the long_volume dataframe with the dates and volume types
+        lng_temp_df <- dplyr::mutate(.data = lng_temp_df, "Vol_type" = vol_type, "Dates" = dates, .after = 4)
+
+        #Plot the individual long pivot dataframes
+        plot <- ggplot2::ggplot(data = lng_temp_df,
+                    mapping = aes(x = Dates, y = Volumes, fill = Mouse_ID, color = Mouse_ID, group = Mouse_ID)) +
+                    ggplot2::geom_point(show.legend = TRUE) +
+                    ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
+                    ggplot2::scale_x_discrete(breaks = unique_dates, labels = as.character(unique_dates)) +
+                    ggplot2::ggtitle(paste0("Projected corrected tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))) +
+                    labs(x = expression("Sampling dates"), y = expression("Tumor volumes mm"^3),
+                        color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
+                    ggplot2::theme_classic() +
+                    ggplot2::theme(plot.title = element_text(hjust = 0.5))
+
+        #Assing the plot to the output list
+        output_plots_list[[index]] <- plot
+
+        #Name the output list elements
+        names(output_plots_list)[[index]] <- paste0("Projected corrected tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))
     }
+
+
+    ##Return the output list
+    return(output_plots_list)
+
 }
 
 
