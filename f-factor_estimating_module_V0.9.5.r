@@ -2050,6 +2050,10 @@ estimate_final_tumor_volume = function(input_measurement_list, mean_f_values_lis
         #Name the new columns containing the estimated tumor volumes
         colnames(temp_vol_df) <- paste0("Estim_volume", sampling_dates)
 
+        #Re-add the sample designation columns
+        temp_vol_df <- dplyr::mutate(.data = temp_vol_df, "Treatment_group_ID" = temp_df$Treatment_group_id,
+        "Treatment" = temp_df$Treatment, "Mouse_ID" = temp_df$Mouse_ID, .before = 1)
+
         #An if statement controlling if rows which were NAs in the uCT dataset and were removed should also be removed here
         if (remove_uct_na_samples == TRUE) {
             temp_vol_df <- temp_vol_df[temp_df$Mouse_ID %in% clean_uCT_lst[[index]]$Mouse_ID, ]
@@ -2101,11 +2105,19 @@ correct_final_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
 
         ##Start calculations
 
+        #Initialize a dataframe holding only the tumor measurement columns
+        temp_vol_df <- temp_calip_df[, grep(pattern = "volume", x = colnames(temp_calip_df), ignore.case = TRUE)]
+
         #Apply the correction by multiplying the caliper df with the correction matrix using the mapply function
-        temp_corr_calip_df <- as.data.frame(mapply(FUN = "/", temp_calip_df, temp_corr_df))
+        temp_corr_calip_df <- as.data.frame(mapply(FUN = "/", temp_vol_df, temp_corr_df))
 
         #Name the new columns containing the estimated tumor volumes
         colnames(temp_corr_calip_df) <- paste0("Corrected_volume", sampling_dates)
+
+        #Re-add the sample designation columns
+        temp_corr_calip_df <- dplyr::mutate(.data = temp_corr_calip_df, "Treatment_group_ID" = temp_calip_df$Treatment_group_ID,
+        "Treatment" = temp_calip_df$Treatment, "Mouse_ID" = temp_calip_df$Mouse_ID, .before = 1)
+
 
         #Assign the corrected dataframe to the output list
         output_list[[index]] <- temp_corr_calip_df
@@ -2123,51 +2135,6 @@ correct_final_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
         return(final_tumor_volume_lst)
     }
        
-}
-
-
-
-
-##Re-bind the final tumor estimated/corrected tumor volumes with the first 3 identity columns
-rebind_tumor_volumes = function(corrected_final_volume_lst, caliper_lst, remove_uct_na_samples = TRUE, clean_uCT_lst) {
-    ##Declare static function variables
-
-    #Initialize an output list
-    output_list <- vector(mode = "list", length = length(corrected_final_volume_lst))
-
-
-    ##Calculations
-    
-
-    for (index in seq_along(corrected_final_volume_lst)) {
-        ##Declare dynamic variables
-
-        #Initialize a dynamic dataframe variable to hold the corrected caliper list elements
-        corr_final_vol_df <- corrected_final_volume_lst[[index]]
-
-        #Initialize a dynamic dataframe variable to hold the caliper list elements
-        temp_calip_df <- caliper_lst[[index]]
-
-        #An if statement controlling if the caliper measurement list should be truncated based on the uCT measurement list
-        if (remove_uct_na_samples == TRUE) {
-            temp_calip_df <- temp_calip_df[temp_calip_df$Mouse_ID %in% clean_uCT_lst[[index]]$Mouse_ID, ]
-        }
-
-        #Transfer the appropriate columns
-        corr_final_vol_df <- cbind(temp_calip_df[, c(1, 2, 3)], corr_final_vol_df)
-
-        #Assign the corrected final volume dfs to the output list
-        output_list[[index]] <- corr_final_vol_df
-
-    }
-
-    #Name the output list element
-    names(output_list) <- names(caliper_lst)
-
-    
-    ##Return the output list
-    return(output_list)
-
 }
 
 
@@ -2295,6 +2262,28 @@ create_qc_plots = function(unified_list, remove_uct_na_samples = TRUE) {
 
 }
 
+
+
+
+## Create growth curves based on the estimated and corrected volumes
+create_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
+    ##Declare static function variables
+
+    #Initialize the output plot list
+    output_plots_list <- vector(mode = "list", length = length(final_vol_lst))
+
+
+    ##Calsuclations
+
+    for (index in seq_along(final_vol_lst)) {
+        ##Declare dynamic function variables
+
+        #Initialize a datafame holding the currently processed dataframe
+        temp_df <- final_vol_lst[[index]]
+
+        temp_vol_df <- 
+    }
+}
 
 
 
