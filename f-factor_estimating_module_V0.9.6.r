@@ -2479,10 +2479,16 @@ nonparametric_test = "numeric_outlier_test") {
             nonparam_test = nonparametric_test)
     } else if (detect_fc_outliers == FALSE && remove_fc_outliers == FALSE) {
         if (verb == TRUE) {
-            message("Outlier detection to find outliers among the calculated f-constants was not requested.")
+            message("Outlier detection to find outliers among the calculated f-constants and outlier removal were not requested.")
         }
     } else if (detect_fc_outliers == FALSE && remove_fc_outliers == TRUE) {
-        
+        unif_mData_f_const <- outlier_cleaner(calculate_f_constants_output_list = unif_mData_f_const,
+        is_data_normal_output_list = is_normal_data,
+        nonparam_test = nonparametric_test)
+
+    } else if (detect_fc_outliers == TRUE && remove_fc_outliers == TRUE) {
+        cat("The two conditions 'detect_fc_outliers' and 'remove_fc_outliers' cannot be true at the same time.\n", file = stderr())
+        quit(status = 1)
     }
 
 }
