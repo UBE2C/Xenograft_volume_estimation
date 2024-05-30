@@ -2345,7 +2345,7 @@ plot_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
 
 
 ## The main function which will be called when the program is launched
-main = function(input_path, sep = ";") {
+main = function(input_path, sep = ";", rm_na_samples = TRUE) {
     ##Call the package management functions
     package_loader()
     package_controller()
@@ -2355,6 +2355,13 @@ main = function(input_path, sep = ";") {
     uct_data <- read_uCT_data(data_path = input_path, separator = sep)
     caliper_data <- read_caliper_data(data_path = input_path, separator = sep)
 
+
+    ##Clean the loaded data
+    clean_data <- clean_input_data(uct_data_lst = uct_data, caliper_data_lst = caliper_data, remove_na_samples = rm_na_samples)
+
+
+    ##Fit the caliper and uct measurements
+    
     
 }
 
