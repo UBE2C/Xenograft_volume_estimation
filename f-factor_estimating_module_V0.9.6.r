@@ -577,7 +577,7 @@ fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list) {
 #Bind the trimmed caliper measurement dataframes together by columns and create a clean unified df
 #This function will carry out the column bind and organizes the dataframes according to the uCT measurements list, then creates a list of unified dataframes
 #using the selected column of the cuCT measurements and the transposed bound caliper measurements
-bind_and_unify_measurements = function(fit_caliper_measurements_output_list, clean_uCT_data_output_list) {
+bind_and_unify_measurements = function(fitted_caliper_list, fitted_uCT_list) {
     
     
     ##Define the variables used in the function
@@ -590,12 +590,12 @@ bind_and_unify_measurements = function(fit_caliper_measurements_output_list, cle
 
     
     #Unify the bound caliper measurements and selected columns from the clean_uCT_list
-    for (i in seq_along(fit_caliper_measurements_output_list)) {
-        unified_df_list[[i]] <- cbind(fit_caliper_measurements_output_list[[i]], clean_uCT_data_output_list[[i]][, c(grep(pattern = "volume", x = colnames(clean_uCT_data_output_list[[i]]), ignore.case = TRUE))])
+    for (i in seq_along(fitted_caliper_list)) {
+        unified_df_list[[i]] <- cbind(fitted_caliper_list[[i]], fitted_uCT_list[[i]][, c(grep(pattern = "volume", x = colnames(fitted_uCT_list[[i]]), ignore.case = TRUE))])
     }
 
     #Name the output list elements
-    names(unified_df_list) <- names(fit_caliper_measurements_output_list)
+    names(unified_df_list) <- names(fitted_caliper_list)
 
     ##Return the bound_df_list
     return(unified_df_list)
@@ -2429,30 +2429,61 @@ plot_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
 
 
 ## The main function which will be called when the program is launched
-main = function(input_path, sep = ";", rm_na_samples = TRUE) {
+main = function(input_path, sep = ";", verb = FALSE, rm_na_samples = TRUE, detect_fc_outliers = TRUE, remove_fc_outliers = FALSE,
+nonparametric_test = "numeric_outlier_test") {
     ##Call the package management functions
     package_loader()
     package_controller()
 
 
-    ##Load the required data
+    ##Load and clean the required data
+
+    #Load the uCT and caliper measurements as lists
     uct_data <- read_uCT_data(data_path = input_path,
         separator = sep)
     caliper_data <- read_caliper_data(data_path = input_path,
         separator = sep)
 
-
-    ##Clean the loaded data
+    #Clean the loaded data lists
     clean_measurement_data <- clean_input_data(uct_data_lst = uct_data,
         caliper_data_lst = caliper_data,
-        remove_na_samples = rm_na_samples)
+        remove_na_samples = rm_na_samples,
+        verbose = verb)
 
 
-    ##Fit the clean datasets
+    ##Fit the clean datasets and bind the uCT date speficic measurements togeather
+
+    #Fit the clean caliper measurements to match the uCT measurements and vice versa
     fitted_measurement_data <- fit_clean_data(clean_uct_data_list = clean_measurement_data[[1]],
         clean_caliper_data_list = clean_measurement_data[[2]])
 
+    #Bind and unify the fitted measurement dataframes for f-constant calculations
+    unified_measurement_data <- bind_and_unify_measurements(fitted_uCT_list = fitted_measurement_data[[1]],
+        fitted_caliper_list = fitted_measurement_data[[2]])
+
+    
+    ##Calculate the sample and measurement date specific f-constants and their sample specific means
+    unif_mData_f_const <- calculate_f_constants(unified_measurement_data)
+
+
+    ##Check the calculated f-constants for outliers and remove the affected samples if desired
+
+    #Check if the calculated f-constants show a normal distribution
+    is_normal_data <- is_data_normal(unif_mData_f_const)
+
+    #Determine if potential outliers should only be detected or right away removed for the grand mean
+    #f-constant calculation
+    if (detect_fc_outliers == TRUE && remove_fc_outliers == FALSE) {
+        outlier_detector(calculate_f_constants_output_list = unif_mData_f_const,
+            is_data_normal_output_list = is_normal_data,
+            nonparam_test = nonparametric_test)
+    } else if (detect_fc_outliers == FALSE && remove_fc_outliers == FALSE) {
+        if (verb == TRUE) {
+            message("Outlier detection to find outliers among the calculated f-constants was not requested.")
+        }
+    } else if (detect_fc_outliers == FALSE && remove_fc_outliers == TRUE) {
         
+    }
 
 }
 
