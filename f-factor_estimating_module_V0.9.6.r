@@ -460,7 +460,7 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
     output_list[[2]] <- clean_caliper_measurement
 
     
-    ##NOTE: as R cannot assign multiple vari
+    ##Return the output list
     return(output_list)
 
 }
@@ -482,16 +482,24 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
 ## Processing the caliper measurements to match the entries of the uCT data
 
 
-# Trim the caliper measurements to all the uCT entries based on date
-# This function will process the caliper measurements to fit the dates and samples recorded in the uCT measurements
-fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_data_output_list) {
+# Trim the caliper measurements to all the uCT entries based on date and refit the uCT data to the trimmed cleaned caliper measurements
+# This function will process the caliper measurements to fit the dates and samples recorded in the uCT measurements, and refits the clean uCT measurements
+# to the newly trimmed caliper data 
+fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list) {
     ##Define the variables used by this function
 
-    #Initialize a list onto which the row trimmed down caliper measurements will be added
-    trimmed_caliper_list <- vector(mode = "list")
+    #Initialize an output list which will hold the trimmed caliper measurements
+    trimmed_caliper_list_out <- vector(mode = "list", length = length(clean_caliper_data_list))
+
+    #Initialize an output list which will hold the trimmed uCT measurements
+    trimmed_uct_list_out <- vector(mode = "list", length = length(clean_uct_data_list))
+
+    #Initialize a final output list
+    final_output_list <- vector(mode = "list", length = 2)
     
     #Initialize temporary dataframes on which the processing can take place
     temp_uct_df <- data.frame()
+    trimmed_uct_df <- data.frame()
     temp_calip_df <- data.frame()
 
     #Initialize a vector which will hold the name of the caliper list element which matches the uCT list element
@@ -502,24 +510,26 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
 
     #The main body of the function responsible for the trimming of the caliper list elements according to the uCT list elements
     #The outer for loop traverses the uCT measurement list 
-    for (element in seq_along(clean_uCT_data_output_list)) {
+    for (index in seq_along(clean_uct_data_list)) {
         #Assign the list elements (dataframes) into the appropriate temporary dataframe variable
-        temp_uct_df <- clean_uCT_data_output_list[[element]]
+        temp_uct_df <- clean_uct_data_list[[index]]
 
-        #Initialize a list onto which the sampling dates will be added (NOTE: the function assumes that the sampling dates between the uCT and caliper measurements are the same!)
+        #Initialize a vector onto which the sampling dates will be added (NOTE: the function assumes that the sampling dates between the uCT and caliper measurements are the same!)
         uCT_sampling_dates <- unlist(stringr::str_extract_all(string = colnames(temp_uct_df), pattern = "_[0-9\\.]+"))
+
+        #Initialize the same dates vector, but as a global variable so it is available to other functions
         uCT_sampling_dates <<- unlist(stringr::str_extract_all(string = colnames(temp_uct_df), pattern = "_[0-9\\.]+"))
 
         
         #This inner loop traverses the caliper measurements list
-        for (item in seq_along(read_caliper_data_output_list)) {
+        for (item in seq_along(clean_caliper_data_list)) {
             #This if statement is responsible for matching the current element of the uCT list with the corresponding element of the caliper list
-            if (unique(temp_uct_df$Treatment_group_id) == unique(read_caliper_data_output_list[[item]]$Treatment_group_id)) {
+            if (unique(temp_uct_df$Treatment_group_id) == unique(clean_caliper_data_list[[item]]$Treatment_group_id)) {
                 #Assign the corresponding caliper list element (dataframes) into the appropriate temporary dataframe variable
-                temp_calip_df <- read_caliper_data_output_list[[item]]
+                temp_calip_df <- clean_caliper_data_list[[item]]
 
                 #Assign the corresponding caliper list element name into the temporary list element name variable
-                list_element_name <- names(read_caliper_data_output_list)[item]
+                list_element_name <- names(clean_caliper_data_list)[item]
             }
 
             #Trim the corresponding caliper measurement dataframe by the correct rows
@@ -540,16 +550,26 @@ fit_caliper_measurements = function(read_caliper_data_output_list, clean_uCT_dat
         }
 
         #Assign the trimmed caliper measurement to the output list
-        trimmed_caliper_list[[element]] <- temp_calip_df
+        trimmed_caliper_list_out[[index]] <- temp_calip_df
+
+        #Fit the uCT dataframes to the potentially shorter, trimmed caliper dataframes
+        trimmed_uct_df <- temp_uct_df[temp_uct_df$Mouse_ID %in% temp_calip_df$Mouse_ID, ]
+
+        #Assign the trimmed uCT measurement to the output list
+        trimmed_uct_list_out[[index]] <- trimmed_uct_df
 
         #Add the matching name to each list element
-        names(trimmed_caliper_list)[element] <- list_element_name
+        names(trimmed_caliper_list_out)[index] <- list_element_name
+        names(trimmed_uct_list_out)[index] <- names(clean_uct_data_list)[index]
 
     }
 
+    #Add the return lists to the final output list
+    final_output_list[[1]] <- trimmed_uct_list_out
+    final_output_list[[2]] <- trimmed_caliper_list_out
 
     ##Return the the fully trimmed data as a list
-    return(trimmed_caliper_list)
+    return(final_output_list)
 
 }
 
@@ -2409,16 +2429,30 @@ plot_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
 
 
 ## The main function which will be called when the program is launched
-main = function(input_path, sep = ";") {
+main = function(input_path, sep = ";", rm_na_samples = TRUE) {
     ##Call the package management functions
     package_loader()
     package_controller()
 
 
     ##Load the required data
-    uct_data <- read_uCT_data(data_path = input_path, separator = sep)
-    caliper_data <- read_caliper_data(data_path = input_path, separator = sep)
+    uct_data <- read_uCT_data(data_path = input_path,
+        separator = sep)
+    caliper_data <- read_caliper_data(data_path = input_path,
+        separator = sep)
 
+
+    ##Clean the loaded data
+    clean_measurement_data <- clean_input_data(uct_data_lst = uct_data,
+        caliper_data_lst = caliper_data,
+        remove_na_samples = rm_na_samples)
+
+
+    ##Fit the clean datasets
+    fitted_measurement_data <- fit_clean_data(clean_uct_data_list = clean_measurement_data[[1]],
+        clean_caliper_data_list = clean_measurement_data[[2]])
+
+        
 
 }
 
