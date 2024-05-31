@@ -326,7 +326,7 @@ read_caliper_data = function(data_path, separator) {
 
 
 ## This function cleans the uCT data by removing entries without corresponding caliper measurements
-clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_samples = TRUE) {
+clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_samples) {
     ##Declare function variables
     
     #Declare a new list for the clean uCT dataframes
@@ -1493,7 +1493,7 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 ## outliers
 ## IMPORTANT NOTE: this function seems to work, but is a bit cobbled together as I'm not very familiar with while loops. Therefore please if you have more
 ## experience with them check and debug this bad boy! :)
-outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_output_list, nonparam_test = "numeric_outlier_test") {
+outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_output_list, nonparam_test) {
     for (index in seq_along(is_data_normal_output_list)) {
         if (is_data_normal_output_list[[index]]$p.value < 0.05) {
             message("\nIt seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection and removal.")
@@ -1594,7 +1594,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
 
 ## This a wrapper function which binds the 3 outlier detection functions together (please note that the detect function returns nothing, only messages!)
-outlier_detector = function(calculate_f_constants_output_list, is_data_normal_output_list, nonparam_test = "numeric_outlier_test") {
+outlier_detector = function(calculate_f_constants_output_list, is_data_normal_output_list, nonparam_test) {
     ##Run the appropriate detector functions
 
     #This construct checks if the f-constants from the elements of the calculate f-constants output list are normally distributed
@@ -1953,121 +1953,6 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list)
 
 
 
-tumor_vol_correction <- function(estimated_tumor_volume_list, mean_f_values_list) {
-  ## Declare static function variables
-
-  # Initialize the return/output list
-  return_list <- vector(mode = "list", length = length(estimated_tumor_volume_list))
-  correction_factor_list <- vector(mode = "list", length = length(estimated_tumor_volume_list))
-
-  ## Calculate the appropriate variables
-  for (index in seq_along(estimated_tumor_volume_list)) {
-    ## Declare dynamic function variables
-    temp_df <- estimated_tumor_volume_list[[index]]
-    estim_vols <- temp_df[, grep(pattern = "estim", x = colnames(temp_df), ignore.case = TRUE)]
-    uCT_vols <- temp_df[, grep(pattern = "uct", x = colnames(temp_df), ignore.case = TRUE)]
-
-    temp_std <- sd(temp_df$f_const_mean, na.rm = TRUE)
-    std_bin <- seq(from = 0, to = 2, by = 0.5)
-    below_mean_std_vals <- mean_f_values_list[[index]] - (temp_std * std_bin)
-    above_mean_std_vals <- mean_f_values_list[[index]] + (temp_std * std_bin)
-
-    below_mean_volumes <- data.frame(matrix(nrow = length(std_bin), ncol = ncol(estim_vols)))
-    above_mean_volumes <- data.frame(matrix(nrow = length(std_bin), ncol = ncol(estim_vols)))
-
-    rownames(below_mean_volumes) <- as.character(std_bin)
-    colnames(below_mean_volumes) <- colnames(estim_vols)
-    rownames(above_mean_volumes) <- as.character(std_bin)
-    colnames(above_mean_volumes) <- colnames(estim_vols)
-
-    ## Calculate volume deviations below mean
-    for (c in seq_len(ncol(estim_vols))) {
-      for (ind in seq_along(below_mean_std_vals)) {
-        if (ind < length(below_mean_std_vals)) {
-          filter_list <- dplyr::filter(temp_df, f_const_mean <= below_mean_std_vals[ind] & f_const_mean > below_mean_std_vals[ind + 1])
-          #print(filter_list)
-          below_mean_volumes[ind, c] <- mean(filter_list[, colnames(estim_vols)[c]], na.rm = TRUE) / mean(filter_list[, colnames(uCT_vols)[c]], na.rm = TRUE)
-          print(below_mean_volumes)
-        }
-      }
-    }
-
-    ## Calculate volume deviations above mean
-    for (c in seq_len(ncol(estim_vols))) {
-      for (ind in seq_along(above_mean_std_vals)) {
-        if (ind < length(above_mean_std_vals)) {
-          filter_list <- dplyr::filter(temp_df, f_const_mean >= above_mean_std_vals[ind] & f_const_mean < above_mean_std_vals[ind + 1])
-          above_mean_volumes[ind, c] <- mean(filter_list[, colnames(estim_vols)[c]], na.rm = TRUE) / mean(filter_list[, colnames(uCT_vols)[c]], na.rm = TRUE)
-        }
-      }
-    }
-
-    corrected_volumes <- data.frame(matrix(nrow = nrow(temp_df), ncol = ncol(estim_vols)))
-    correction_factors <- data.frame(matrix(nrow = nrow(temp_df), ncol = ncol(estim_vols)))
-
-    ## Perform value correction for values below the mean
-    for (c in seq_len(ncol(estim_vols))) {
-      for (r in seq_len(nrow(temp_df))) {
-        if (is.nan(temp_df$f_const_mean[r])) {
-          corrected_volumes[r, c] <- NA
-          correction_factors[r, c] <- NA
-        } else {
-          for (e in seq_len(length(below_mean_std_vals) - 1)) {
-            if () {
-                corrected_volumes[r, c] <- NA
-            } else if (temp_df$f_const_mean[r] <= below_mean_std_vals[e] && temp_df$f_const_mean[r] > below_mean_std_vals[e + 1]) {
-              corrected_volumes[r, c] <- temp_df[r, colnames(estim_vols)[c]] / below_mean_volumes[e, c]
-              correction_factors[r, c] <- below_mean_volumes[e, c]
-            }
-          }
-        }
-      }
-    }
-
-    ## Perform value correction for values above the mean
-    for (c in seq_len(ncol(estim_vols))) {
-      for (r in seq_len(nrow(temp_df))) {
-        if (is.nan(temp_df$f_const_mean[r])) {
-          corrected_volumes[r, c] <- NA
-          correction_factors[r, c] <- NA
-        } else {
-          for (e in seq_len(length(above_mean_std_vals) - 1)) {
-            if (is.nan(temp_df$f_const_mean[r])) {
-                corrected_volumes[r, c] <- NA
-            } else if (temp_df$f_const_mean[r] >= above_mean_std_vals[e] && temp_df$f_const_mean[r] < above_mean_std_vals[e + 1]) {
-              corrected_volumes[r, c] <- temp_df[r, colnames(estim_vols)[c]] / above_mean_volumes[e, c]
-              correction_factors[r, c] <- above_mean_volumes[e, c]
-            }
-          }
-        }
-      }
-    }
-
-    colnames(correction_factors) <- paste0("Corr_factor", seq_len(ncol(estim_vols)))
-    correction_factor_list[[index]] <- correction_factors
-
-    colnames(corrected_volumes) <- paste0("Corr_volume", seq_len(ncol(estim_vols)))
-    temp_df <- cbind(temp_df, corrected_volumes)
-    return_list[[index]] <- temp_df
-  }
-
-  names(correction_factor_list) <- names(estimated_tumor_volume_list)
-  correction_factor_list <<- correction_factor_list
-
-  names(return_list) <- names(estimated_tumor_volume_list)
-  return(return_list)
-}
-
-
-
-
-
-
-
-
-
-
-
 
 ## Test the corrected volumes using a goodness of fit test
 gof_test = function(measurement_list, correction = TRUE) {
@@ -2172,7 +2057,7 @@ gof_test = function(measurement_list, correction = TRUE) {
 
 
 ## Calculate the correction factor matrix for the pure caliper measurements data
-calculate_correction_matrixes = function(correction_factor_lst) {
+calculate_correction_matrixes = function(correction_factor_lst, corr_method, number_of_measurements) {
     ##Define function variables
 
     #Initialize the output list
@@ -2181,23 +2066,50 @@ calculate_correction_matrixes = function(correction_factor_lst) {
 
     ##Start the calculations
 
-    #This for loop traverses the input list and splits off the input list elements (data frames)
-    for (index in seq_along(correction_factor_lst)) {
-        ##Define the dynamic function variables
+    if (corr_method == "linear_correction") {
+        #This for loop traverses the input list and splits off the input list elements (data frames)
+        for (index in seq_along(correction_factor_lst)) {
+            ##Define the dynamic function variables
 
-        #Initialize the current list element dataframe
-        temp_corr_df <- correction_factor_lst[[index]]
+            #Initialize the current list element dataframe
+            temp_corr_df <- correction_factor_lst[[index]]
 
-        #Initialize the correction factor matrix
-        corr_factor_matrix <- data.frame(matrix(nrow = nrow(temp_corr_df), ncol = n_calip_measurements))
+            #Initialize the correction factor matrix
+            corr_factor_matrix <- data.frame(matrix(nrow = nrow(temp_corr_df), ncol = number_of_measurements))
 
-        for (r in seq_len(nrow(temp_corr_df))) {
-            corr_factor_matrix[r, ] <- seq(from = temp_corr_df[r, 1], to = temp_corr_df[r, 2], by = (temp_corr_df[r, 2] - temp_corr_df[r, 1]) / (n_calip_measurements - 1))
-            
+            #Calculate the linear correction values across the measurements based on the early and late correction factors
+            for (r in seq_len(nrow(temp_corr_df))) {
+                corr_factor_matrix[r, ] <- seq(from = temp_corr_df[r, 1], to = temp_corr_df[r, 2], by = (temp_corr_df[r, 2] - temp_corr_df[r, 1]) / (number_of_measurements - 1))
+                
+            }
+
+            #Assign the correction matrix to the output list
+            output_list[[index]] <- corr_factor_matrix
+
         }
 
-        output_list[[index]] <- corr_factor_matrix
+    } else if (corr_method == "mean_correction") {
+        #This for loop traverses the input list and splits off the input list elements (data frames)
+        for (index in seq_along(correction_factor_lst)) {
+            ##Define the dynamic function variables
+
+            #Initialize the current list element dataframe
+            temp_corr_df <- correction_factor_lst[[index]]
+
+            #Initialize the correction factor vector for each list element
+            corr_factor_vector <- vector(mode = "numeric", length = nrow(temp_corr_df))
+
+            #Initialize the correction factor vector for each list element and 
+            #calculate the mean correction factors using the early and late correction factors
+            corr_factor_vector <- rowMeans(temp_corr_df, na.rm = TRUE)
+
+            #Assign the correction vector to the output list
+            output_list[[index]] <- corr_factor_vector
+
+        }
+
     }
+    
     
     #Name the output list elements according to the input list
     names(output_list) <- names(correction_factor_lst)
@@ -2214,7 +2126,7 @@ calculate_correction_matrixes = function(correction_factor_lst) {
 
 ## This function will estimate the final tumor volumes of the caliper measurements based on the mean f-constant
 ## NOTE: this is a variant of the estimate_tumor_volume function
-estimate_final_tumor_volume = function(input_measurement_list, mean_f_values_list, remove_uct_na_samples = TRUE, clean_uCT_lst) {
+estimate_final_tumor_volume = function(input_measurement_list, mean_f_values_list, remove_na_samples) {
     ##Declare the function variables
 
     #List to return
@@ -2222,7 +2134,7 @@ estimate_final_tumor_volume = function(input_measurement_list, mean_f_values_lis
 
 
     ##Assign function variables
-    input_list <- input_measurement_list
+    input_list <- input_measurement_list[[2]]
 
 
     ##Calculations
@@ -2260,8 +2172,8 @@ estimate_final_tumor_volume = function(input_measurement_list, mean_f_values_lis
         "Treatment" = temp_df$Treatment, "Mouse_ID" = temp_df$Mouse_ID, .before = 1)
 
         #An if statement controlling if rows which were NAs in the uCT dataset and were removed should also be removed here
-        if (remove_uct_na_samples == TRUE) {
-            temp_vol_df <- temp_vol_df[temp_df$Mouse_ID %in% clean_uCT_lst[[index]]$Mouse_ID, ]
+        if (remove_na_samples == TRUE) {
+            temp_vol_df <- temp_vol_df[temp_df$Mouse_ID %in% input_measurement_list[[1]][[index]]$Mouse_ID, ]
 
         }
 
@@ -2283,64 +2195,105 @@ estimate_final_tumor_volume = function(input_measurement_list, mean_f_values_lis
 
 
 ## Correct the estimated final tumor volumes
-correct_final_tumor_volumes = function(final_tumor_volume_lst, correction_matrix_lst, remove_uct_na_samples = TRUE) {
+correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix_lst, correction_method) {
     ##Declare static function variables
 
     #Initialize the output list
     output_list <- vector(mode = "list", length = length(final_tumor_volume_lst))
 
-    if (remove_uct_na_samples == TRUE) {
+    if (correction_method == "linear_correction") {
     ##Start the correction
 
-    #This loop traverses the input list and splits off list elements (dataframes) for processing
-    for (index in seq_along(final_tumor_volume_lst)) {
-        ##Declare dynamic variables
+        #This loop traverses the input list and splits off list elements (dataframes) for processing
+        for (index in seq_along(final_tumor_volume_lst)) {
+            ##Declare dynamic variables
 
-        #Initialize a dynamic dataframe variable to hold caliper list elements
-        temp_calip_df <- final_tumor_volume_lst[[index]]
+            #Initialize a dynamic dataframe variable to hold caliper list elements
+            temp_calip_df <- final_tumor_volume_lst[[index]]
 
-        #Initialize a dynamic dataframe variable to hold correction matrix list elements
-        temp_corr_df <- correction_matrix_lst[[index]]
+            #Initialize a dynamic dataframe variable to hold correction matrix list elements
+            temp_corr_df <- correction_matrix_lst[[index]]
 
-        #Initialize a dynamic dataframe variable to hold corrected caliper list elements
-        temp_corr_calip_df <- data.frame(matrix(nrow = nrow(temp_calip_df), ncol = ncol(temp_calip_df)))
+            #Initialize a dynamic dataframe variable to hold corrected caliper list elements
+            temp_corr_calip_df <- data.frame(matrix(nrow = nrow(temp_calip_df), ncol = ncol(temp_calip_df)))
 
-        #Initialize a vector containing the sampling dates for naming the estimated tumor volumes
-        sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(temp_calip_df), pattern = "_[0-9\\.]+")))
+            #Initialize a vector containing the sampling dates for naming the estimated tumor volumes
+            sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(temp_calip_df), pattern = "_[0-9\\.]+")))
 
-        ##Start calculations
+            ##Start calculations
 
-        #Initialize a dataframe holding only the tumor measurement columns
-        temp_vol_df <- temp_calip_df[, grep(pattern = "volume", x = colnames(temp_calip_df), ignore.case = TRUE)]
+            #Initialize a dataframe holding only the tumor measurement columns
+            temp_vol_df <- temp_calip_df[, grep(pattern = "volume", x = colnames(temp_calip_df), ignore.case = TRUE)]
 
-        #Apply the correction by multiplying the caliper df with the correction matrix using the mapply function
-        temp_corr_calip_df <- as.data.frame(mapply(FUN = "/", temp_vol_df, temp_corr_df))
+            #Apply the correction by dividing the caliper df with the correction matrix using the mapply function
+            temp_corr_calip_df <- as.data.frame(mapply(FUN = "/", temp_vol_df, temp_corr_df))
 
-        #Name the new columns containing the estimated tumor volumes
-        colnames(temp_corr_calip_df) <- paste0("Corrected_volume", sampling_dates)
+            #Name the new columns containing the estimated tumor volumes
+            colnames(temp_corr_calip_df) <- paste0("Corrected_volume", sampling_dates)
 
-        #Re-add the sample designation columns
-        temp_corr_calip_df <- dplyr::mutate(.data = temp_corr_calip_df, "Treatment_group_ID" = temp_calip_df$Treatment_group_ID,
-        "Treatment" = temp_calip_df$Treatment, "Mouse_ID" = temp_calip_df$Mouse_ID, .before = 1)
-
-
-        #Assign the corrected dataframe to the output list
-        output_list[[index]] <- temp_corr_calip_df
-
-    }
-
-    #Name the output list elements based on the input list element names
-    names(output_list) <- names(final_tumor_volume_lst)
+            #Re-add the sample designation columns
+            temp_corr_calip_df <- dplyr::mutate(.data = temp_corr_calip_df, "Treatment_group_ID" = temp_calip_df$Treatment_group_ID,
+            "Treatment" = temp_calip_df$Treatment, "Mouse_ID" = temp_calip_df$Mouse_ID, .before = 1)
 
 
-    ##Return the output list
-    return(output_list)
+            #Assign the corrected dataframe to the output list
+            output_list[[index]] <- temp_corr_calip_df
 
-    } else {
-        warning("The NA samples in the uCT dataframe were not removed, therefore tumor volume correction is not possible! \n",
-        "Returning the uncorrected tumor volumes:")
+        }
 
-        return(final_tumor_volume_lst)
+        #Name the output list elements based on the input list element names
+        names(output_list) <- names(final_tumor_volume_lst)
+
+
+        ##Return the output list
+        return(output_list)
+
+    } else if (correction_method == "mean_correction") {
+        
+        for (index in seq_along(final_tumor_volume_lst)) {
+             ##Declare dynamic variables
+
+            #Initialize a dynamic dataframe variable to hold caliper list elements
+            temp_calip_df <- final_tumor_volume_lst[[index]]
+
+            #Initialize a dynamic dataframe variable to hold correction matrix list elements
+            temp_corr_vector <- correction_matrix_lst[[index]]
+
+            #Initialize a dynamic dataframe variable to hold corrected caliper list elements
+            temp_corr_calip_df <- data.frame(matrix(nrow = nrow(temp_calip_df), ncol = ncol(temp_calip_df)))
+
+            #Initialize a vector containing the sampling dates for naming the estimated tumor volumes
+            sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(temp_calip_df), pattern = "_[0-9\\.]+")))
+
+            ##Start calculations
+
+            #Initialize a dataframe holding only the tumor measurement columns
+            temp_vol_df <- temp_calip_df[, grep(pattern = "volume", x = colnames(temp_calip_df), ignore.case = TRUE)]
+
+            #Apply the correction by dividing the caliper df with the correction vector
+            temp_corr_calip_df <- temp_vol_df / temp_corr_vector
+
+            #Name the new columns containing the estimated tumor volumes
+            colnames(temp_corr_calip_df) <- paste0("Corrected_volume", sampling_dates)
+
+            #Re-add the sample designation columns
+            temp_corr_calip_df <- dplyr::mutate(.data = temp_corr_calip_df, "Treatment_group_ID" = temp_calip_df$Treatment_group_ID,
+            "Treatment" = temp_calip_df$Treatment, "Mouse_ID" = temp_calip_df$Mouse_ID, .before = 1)
+
+
+            #Assign the corrected dataframe to the output list
+            output_list[[index]] <- temp_corr_calip_df
+
+
+        }
+
+        #Name the output list elements based on the input list element names
+        names(output_list) <- names(final_tumor_volume_lst)
+
+
+        ##Return the output list
+        return(output_list)
+
     }
        
 }
@@ -2556,7 +2509,7 @@ plot_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
 
 ## The main function which will be called when the program is launched
 main = function(input_path, output_path, sep = ";", verb = FALSE, rm_na_samples = TRUE, detect_fc_outliers = TRUE, remove_fc_outliers = FALSE,
-nonparametric_test = "numeric_outlier_test", estim_correction = TRUE) {
+nonparametric_test = "numeric_outlier_test", volume_correction = TRUE, correction_method = "linear_correction") {
     ##Call the package management functions
     package_loader()
     package_controller()
@@ -2662,10 +2615,10 @@ nonparametric_test = "numeric_outlier_test", estim_correction = TRUE) {
     }
 
     #Initiate the goodness of fit test on the correct version of the trimmed data based on if correction was requeted
-    if (estim_correction == TRUE) {
+    if (rm_na_samples == TRUE) {
         #Run the goodness of fit test on the corrected volumes containing dataframe
         p_vals_corr_vols <- gof_test(measurement_list = unif_mData_corr_vols,
-            correction = estim_correction)
+            correction = TRUE)
 
         #Transform the resulting p-values list to a dataframe
         p_vals_corr_df <- do.call(rbind, p_vals_corr_vols)
@@ -2675,7 +2628,13 @@ nonparametric_test = "numeric_outlier_test", estim_correction = TRUE) {
             
     } else {
         p_vals_estim_vols <- gof_test(unif_mData_estim_vols,
-        correction = estim_correction)
+        correction = FALSE)
+
+        if (verb == TRUE) {
+            cat("As the NA value containing samples were not removed during data cleaning, the goodnes of fit test can only be performed with
+            the estimated values \n.",
+            "Please note that final volume correction is still possible using the 'mean_correction' method.")
+        }
 
         #Transform the resulting p-values list to a dataframe
         p_vals_estim_df <- do.call(rbind, p_vals_estim_vols)
@@ -2684,7 +2643,31 @@ nonparametric_test = "numeric_outlier_test", estim_correction = TRUE) {
         readr::write_csv(x = p_vals_estim_df, file = paste0(qc_dir, "/", "Goodness_of_fit_tet_p-values_for_the_estimated_and_fitted_volumes.csv"))
         
     }
-    
+
+
+    ##Calculate correction matixes or vectors for the final total volume corrextions
+    if (volume_correction == TRUE && rm_na_samples == TRUE) {
+        correction_matrix_list <- calculate_correction_matrixes(correction_factor_lst = correction_factor_list,
+            corr_method = correction_method,
+            number_of_measurements = n_calip_measurements)
+    } else if (volume_correction == TRUE && rm_na_samples == FALSE) {
+
+        if (verb == TRUE) {
+            cat("Volume correction was requested, however the NA containing samples were not removed, therefore the correction method
+            will default to 'mean_correction.")
+        }
+
+        correction_vector_list <- calculate_correction_matrixes(correction_factor_lst = correction_factor_list,
+            corr_method = "mean_correction",
+            number_of_measurements = n_calip_measurements)
+
+    }
+
+
+    ##Estimate the total tumor volumes using the caliper measurements 
+    estim_total_volumes <- estimate_total_tumor_volume(input_measurement_list = clean_measurement_data,
+        mean_f_values_list = grand_fc_means,
+        remove_na_samples = rm_na_samples)
 
 
 }   
