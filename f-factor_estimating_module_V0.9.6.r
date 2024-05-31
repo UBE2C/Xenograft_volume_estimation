@@ -423,8 +423,12 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
 
             }
         } else {
-            warning("remove_na_samples was set to FALSE.  All uCT measurement samples will be kept, however NAs or NaNs should be expected in the final output if measurement correction was requested. \n",
-            "Additionally, tumor volume correction and goodness of fit test cannot be performed.")
+            #A message to warn the user that the removal of NAs was not requested and this may lead to unintended consequences
+            if (verbose == TRUE) {
+                warning("remove_na_samples was set to FALSE.  All uCT measurement samples will be kept, however NAs or NaNs should be expected in the final output if measurement correction was requested. \n",
+                "Additionally, tumor volume correction and goodness of fit test cannot be performed.")
+            }
+            
         }
         
 
