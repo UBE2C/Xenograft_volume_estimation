@@ -243,17 +243,17 @@ read_uCT_data = function(data_path, separator) {
 
     ##Start reading  the appropriate files
 
-    #List the files found in the intermediate I/O folder
-    intermediate_IO_files <- list.files(path = data_path)
+    #List the files found in the input directory
+    input_files <- list.files(path = data_path)
     
     #Grep the uCT file names for the checking if statement
-    uCT_file_names <- intermediate_IO_files[grep(pattern = "uCT", x = intermediate_IO_files, ignore.case = TRUE)]
+    uCT_file_names <- input_files[grep(pattern = "uCT", x = input_files, ignore.case = TRUE)]
 
     #This main if statement will check if the correct files are in the folder
     if (length(uCT_file_names) > 0) {
         
         #Read each uCT .csv file and add them to the output list
-        for (item in intermediate_IO_files) {
+        for (item in input_files) {
             if (grepl(pattern = "uCT", x = item, ignore.case = TRUE) == TRUE) {
                 uCT_measurements[[item]] <- read.csv(file = paste0(data_path, "/", item), sep = separator)
             }
@@ -289,16 +289,16 @@ read_caliper_data = function(data_path, separator) {
 
     ##Start reading the appropriate files
 
-    #List the files found in the intermediate I/O folder
-    intermediate_IO_files <- list.files(path = data_path)
+    #List the files found in the input directory
+    input_files <- list.files(path = data_path)
     
     #Grep the uCT file names for the checking if statement
-    processed_caliper_file_names <- intermediate_IO_files[grep(pattern = "caliper", x = intermediate_IO_files, ignore.case = TRUE)]
+    processed_caliper_file_names <- input_files[grep(pattern = "caliper", x = input_files, ignore.case = TRUE)]
     
     #This main if statement will check if the correct files are in the folder
     if (length(processed_caliper_file_names) > 0) {
         #Add the measurements to the list with a for loop
-        for (item in intermediate_IO_files) {
+        for (item in input_files) {
             if (grepl("caliper", item, ignore.case = TRUE) == TRUE) {
                 caliper_measurements[[item]] <- read.csv(file = paste0(data_path, "/", item), sep = separator)
 
@@ -310,11 +310,11 @@ read_caliper_data = function(data_path, separator) {
 
     }
 
-    #Assign the number of caliper measurements to the global environment
-    n_calip_measurements <<- length(grep(pattern = "lxw", x = colnames(calip_list[[1]]), ignore.case = TRUE))
-
     #Name the elements of the caliper_measurements list based on the original processed I/O files
     names(caliper_measurements) <- processed_caliper_file_names
+
+    #Assign the number of caliper measurements to the global environment
+    n_calip_measurements <<- length(grep(pattern = "lxw", x = colnames(caliper_measurements[[1]]), ignore.case = TRUE))
 
 
     ##Return the caliper_measurement list
@@ -1748,7 +1748,7 @@ estimate_tumor_volume = function(input_measurement_list, mean_f_values_list) {
 
 
 
-###MARK: Cntinue from here
+
 ## Correct the estimated tumor volumes
 ## NOTE: this is a complex function. The idea is that it tests what percentage of tumor volume deviation comes from the 0.5, 1, 1.5, 2 
 ## standard deviation distance of sample f-constants from the calculated mean f-constant. Then based on which SD bracket
@@ -2046,7 +2046,7 @@ gof_test = function(measurement_list, correction = TRUE) {
 
 
 ## Calculate the correction factor matrix for the pure caliper measurements data
-calculate_correction_matrix = function(correction_factor_lst) {
+calculate_correction_matrixes = function(correction_factor_lst) {
     ##Define function variables
 
     #Initialize the output list
@@ -2429,8 +2429,8 @@ plot_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
 
 
 ## The main function which will be called when the program is launched
-main = function(input_path, sep = ";", verb = FALSE, rm_na_samples = TRUE, detect_fc_outliers = TRUE, remove_fc_outliers = FALSE,
-nonparametric_test = "numeric_outlier_test") {
+main = function(input_path, output_path, sep = ";", verb = FALSE, rm_na_samples = TRUE, detect_fc_outliers = TRUE, remove_fc_outliers = FALSE,
+nonparametric_test = "numeric_outlier_test", estim_correction = TRUE) {
     ##Call the package management functions
     package_loader()
     package_controller()
@@ -2441,6 +2441,8 @@ nonparametric_test = "numeric_outlier_test") {
     #Load the uCT and caliper measurements as lists
     uct_data <- read_uCT_data(data_path = input_path,
         separator = sep)
+    #NOTE: the read_caliper_data also returns the n_caliper_measurements
+    #global variable for later use by other functions!
     caliper_data <- read_caliper_data(data_path = input_path,
         separator = sep)
 
@@ -2454,6 +2456,8 @@ nonparametric_test = "numeric_outlier_test") {
     ##Fit the clean datasets and bind the uCT date speficic measurements togeather
 
     #Fit the clean caliper measurements to match the uCT measurements and vice versa
+    #NOTE:this function also returns a uCT_sampling_dates global variable
+    #for later use by other functions
     fitted_measurement_data <- fit_clean_data(clean_uct_data_list = clean_measurement_data[[1]],
         clean_caliper_data_list = clean_measurement_data[[2]])
 
@@ -2491,7 +2495,73 @@ nonparametric_test = "numeric_outlier_test") {
         quit(status = 1)
     }
 
-}
+
+    ##Calculate the grand mean f-constants to each treatment condition
+    ##and estimate the tumor volumes on the trimmed dataset for further QC
+    
+    #Calculate the grand mean f-constatnts to each treatment condition based
+    #on the sample mean f-constants
+    grand_fc_means <- calc_mean_f(calculate_f_constants_output_list = unif_mData_f_const)
+
+
+    #Estimate the tumor volume for the trimmed down measurment data which will be
+    #used for further QC
+    unif_mData_estim_vols <- estimate_tumor_volume(input_measurement_list = unif_mData_f_const,
+        mean_f_values_list = grand_fc_means)
+
+
+    ##Correct the estimated tumor volumes on the trimmed dataset using the
+    ##standard-deviation distance test
+    ##NOTE:this function also returns a correction_factor_list global variable
+    ##for later use by other functions
+    unif_mData_corr_vols <- tumor_vol_correction(estimated_tumor_volume_list = unif_mData_estim_vols,
+        mean_f_values_list = grand_fc_means)
+
+
+    ##Implement a goodness of fit test to test the estimation/corrected estimation
+
+    #Initialize a new variable to hold the path to the QC directory
+    qc_dir <- paste0(output_path, "/", "qc_outputs")
+
+    #Create a QC directory in the output folder to store the goodness of fit and other quality control test
+    #outputs
+    if (!dir.exists(qc_dir)) {
+        dir.create(qc_dir)
+
+        if (verb == TRUE) {
+            cat("A new folder with the following path:", qc_dir, "\n", 
+            "was created to stor the goodness of fit test and other qc test outputs.")
+        }
+
+    }
+
+    #Initiate the goodness of fit test on the correct version of the trimmed data based on if correction was requeted
+    if (estim_correction == TRUE) {
+        #Run the goodness of fit test on the corrected volumes containing dataframe
+        p_vals_corr_vols <- gof_test(measurement_list = unif_mData_corr_vols,
+            correction = estim_correction)
+
+        #Transform the resulting p-values list to a dataframe
+        p_vals_corr_df <- do.call(rbind, p_vals_corr_vols)
+
+        #Write the resulting dataframe as a .csv file
+        readr::write_csv(x = p_vals_corr_df, file = paste0(qc_dir, "/", "Goodness_of_fit_tet_p-values_for_the_corrected_and_fitted_volumes.csv"))
+            
+    } else {
+        p_vals_estim_vols <- gof_test(unif_mData_estim_vols,
+        correction = estim_correction)
+
+        #Transform the resulting p-values list to a dataframe
+        p_vals_estim_df <- do.call(rbind, p_vals_estim_vols)
+
+        #Write the resulting dataframe as a .csv file
+        readr::write_csv(x = p_vals_estim_df, file = paste0(qc_dir, "/", "Goodness_of_fit_tet_p-values_for_the_estimated_and_fitted_volumes.csv"))
+        
+    }
+    
+
+
+}   
 
 
 
