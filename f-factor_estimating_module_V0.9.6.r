@@ -2195,13 +2195,13 @@ estimate_final_tumor_volume = function(input_measurement_list, mean_f_values_lis
 
 
 ## Correct the estimated final tumor volumes
-correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix_lst, correction_method) {
+correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix_lst, corr_method) {
     ##Declare static function variables
 
     #Initialize the output list
     output_list <- vector(mode = "list", length = length(final_tumor_volume_lst))
 
-    if (correction_method == "linear_correction") {
+    if (corr_method == "linear_correction") {
     ##Start the correction
 
         #This loop traverses the input list and splits off list elements (dataframes) for processing
@@ -2248,7 +2248,7 @@ correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
         ##Return the output list
         return(output_list)
 
-    } else if (correction_method == "mean_correction") {
+    } else if (corr_method == "mean_correction") {
         
         for (index in seq_along(final_tumor_volume_lst)) {
              ##Declare dynamic variables
@@ -2312,7 +2312,7 @@ correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
 
 
 ## QC plotting - plot the estimated and corrected volumes against the measured volumes
-create_qc_plots = function(unified_list, remove_uct_na_samples = TRUE) {
+create_qc_plots = function(unified_list, plot_qc_vol) {
     ##Define static function variables
 
     #Initialize the output plot list
@@ -2332,7 +2332,7 @@ create_qc_plots = function(unified_list, remove_uct_na_samples = TRUE) {
         ##Processing
 
         #An if statement controlling the downstream processing based on if a correction was made
-        if (remove_uct_na_samples == TRUE) {
+        if (plot_qc_vol == "corrected") {
             #Prepare the uCT and estimated volumes for plotting by binding the desired columns together
             plot_df_corr <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
             plot_df_corr <- cbind(temp_df$Mouse_ID, plot_df_corr, temp_vol_df[, grep(pattern = "corr", x = colnames(temp_vol_df), ignore.case = TRUE)])
@@ -2372,7 +2372,7 @@ create_qc_plots = function(unified_list, remove_uct_na_samples = TRUE) {
 
             output_plots_list[[index]] <- plot_list
 
-        } else {
+        } else if (plot_qc_vol == "estimated") {
             #Prepare the uCT and estimated volumes for plotting by binding the desired columns together
             plot_df_est <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
             plot_df_est <- cbind(temp_df$Mouse_ID, plot_df_est, temp_vol_df[, grep(pattern = "estim", x = colnames(temp_vol_df), ignore.case = TRUE)])
@@ -2509,7 +2509,7 @@ plot_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
 
 ## The main function which will be called when the program is launched
 main = function(input_path, output_path, sep = ";", verb = FALSE, rm_na_samples = TRUE, detect_fc_outliers = TRUE, remove_fc_outliers = FALSE,
-nonparametric_test = "numeric_outlier_test", volume_correction = TRUE, correction_method = "linear_correction") {
+nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volume_correction = TRUE, correction_method = "linear_correction") {
     ##Call the package management functions
     package_loader()
     package_controller()
@@ -2645,8 +2645,47 @@ nonparametric_test = "numeric_outlier_test", volume_correction = TRUE, correctio
     }
 
 
+    ##Create  linear regression plots for visual data QC
+    
+    #Create the QC plots
+    if (rm_na_samples == TRUE) {
+
+        qc_plots <- create_qc_plots(unified_list = unif_mData_corr_vols,
+            plot_qc_vol = plot_qc_volume)
+
+    } else if (rm_na_samples == FALSE) {
+
+        if(verb == TRUE) {
+            cat("As the NA value containing samples were not removed during data cleaning some samples containing NA values might not be plotted!")
+        }
+
+        qc_plots <- create_qc_plots(unified_list = unif_mData_corr_vols,
+            plot_qc_vol = plot_qc_volume)
+
+    }
+
+    #Save the created QC plots
+    for (element in qc_plots) {
+        #Declare dynamic variables
+
+        #Initialize a new list which will contain the current list element of the qc_plots list
+        temp_plot_list <- qc_plots[[element]]
+        
+        for (plot in seq_along(temp_plot_list)) {
+            png(filename = paste0(names(temp_plot_list)[plot], ".png"), width = 1500, height = 750, units = "px")
+            print(temp_plot_list[[plot]])
+        }
+        
+        #Reset the output device
+        dev.off()
+
+    }
+
+
     ##Calculate correction matixes or vectors for the final total volume corrextions
     if (volume_correction == TRUE && rm_na_samples == TRUE) {
+        #NOTE: in this case the correction method can be both 'linear_correction' or 'mean_correction' and the correction_matrix
+        #can represent both a list of matrixes or vectors
         correction_matrix_list <- calculate_correction_matrixes(correction_factor_lst = correction_factor_list,
             corr_method = correction_method,
             number_of_measurements = n_calip_measurements)
@@ -2656,7 +2695,8 @@ nonparametric_test = "numeric_outlier_test", volume_correction = TRUE, correctio
             cat("Volume correction was requested, however the NA containing samples were not removed, therefore the correction method
             will default to 'mean_correction.")
         }
-
+        #NOTE: in this case the correction method can only be 'mean_correction' and the correction_matrix
+        # is named differently to signify that it represents a list of vectors
         correction_vector_list <- calculate_correction_matrixes(correction_factor_lst = correction_factor_list,
             corr_method = "mean_correction",
             number_of_measurements = n_calip_measurements)
@@ -2668,6 +2708,35 @@ nonparametric_test = "numeric_outlier_test", volume_correction = TRUE, correctio
     estim_total_volumes <- estimate_total_tumor_volume(input_measurement_list = clean_measurement_data,
         mean_f_values_list = grand_fc_means,
         remove_na_samples = rm_na_samples)
+
+    
+    ##Correct the total tumor volumes using the previously calclated correction matrix/vector
+    if (volume_correction == TRUE && rm_na_samples == TRUE) {
+        #NOTE: in this case the correction method can be both 'linear_correction' or 'mean_correction' and the correction_matrix
+        #can represent both a list of matrixes or vectors
+        corr_total_volumes <- correct_total_tumor_volumes(final_tumor_volume_lst = estim_total_volumes,
+            correction_matrix_lst = correction_matrix_list,
+            corr_method = correction_method)
+
+    } else if (volume_correction == TRUE && rm_na_samples == FALSE) {
+        
+        if (verb == TRUE) {
+            cat("Volume correction was requested, however the NA containing samples were not removed, therefore the correction method
+            will default to 'mean_correction.")
+        }
+        #NOTE: in this case the correction method can only be 'mean_correction' and the correction_matrix
+        # is named differently to signify that it represents a list of vectors
+        corr_total_volumes <- correct_total_tumor_volumes(final_tumor_volume_lst = estim_total_volumes,
+            correction_matrix_lst = correction_vector_list,
+            corr_method = "mean_correction")
+
+    } else if (volume_correction == FALSE) {
+
+        if (verb == TRUE) {
+            cat("Volume correction was not requested, returning the estimated volumes.")
+        }
+
+    }
 
 
 }   
