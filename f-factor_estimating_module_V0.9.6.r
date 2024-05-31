@@ -712,8 +712,15 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list) {
         #This inner loop traverses the rows of every dataframe in order to trim them down to the calculated f-constants columns and calculate the mean
         #f-constant values for each sample
         for (row in seq_len(nrow(temp_element_df))) {
+
+            # Extract f-constant columns for the current row
+            f_constant_values <- as.numeric(temp_element_df[row, grep(pattern = "f_const_[0-9]+", x = colnames(temp_element_df))])
+
+            # Calculate and print the mean for the current row
+            calculated_mean <- mean(f_constant_values, na.rm = TRUE)
+
             #Split the dataframes to the f-constant columns and calculate the mean values for each sample (row)
-            temp_element_df$f_const_mean[row] <- mean(as.numeric(temp_element_df[row, grep(pattern = "f_const", x = colnames(temp_element_df))]), na.rm = TRUE)
+            temp_element_df$f_const_mean[row] <- calculated_mean
 
         }
 
@@ -1667,7 +1674,7 @@ calc_mean_f = function(calculate_f_constants_output_list) {
 
     ##Calculations
     for (index in seq_along(input_list)) {
-        return_list[[index]] <- mean(input_list[[index]]$f_const_mean)
+        return_list[[index]] <- mean(input_list[[index]]$f_const_mean, na.rm = TRUE)
     }
 
     #Name the return list elements
@@ -1943,6 +1950,121 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list)
     return(return_list)
 
 }
+
+
+
+tumor_vol_correction <- function(estimated_tumor_volume_list, mean_f_values_list) {
+  ## Declare static function variables
+
+  # Initialize the return/output list
+  return_list <- vector(mode = "list", length = length(estimated_tumor_volume_list))
+  correction_factor_list <- vector(mode = "list", length = length(estimated_tumor_volume_list))
+
+  ## Calculate the appropriate variables
+  for (index in seq_along(estimated_tumor_volume_list)) {
+    ## Declare dynamic function variables
+    temp_df <- estimated_tumor_volume_list[[index]]
+    estim_vols <- temp_df[, grep(pattern = "estim", x = colnames(temp_df), ignore.case = TRUE)]
+    uCT_vols <- temp_df[, grep(pattern = "uct", x = colnames(temp_df), ignore.case = TRUE)]
+
+    temp_std <- sd(temp_df$f_const_mean, na.rm = TRUE)
+    std_bin <- seq(from = 0, to = 2, by = 0.5)
+    below_mean_std_vals <- mean_f_values_list[[index]] - (temp_std * std_bin)
+    above_mean_std_vals <- mean_f_values_list[[index]] + (temp_std * std_bin)
+
+    below_mean_volumes <- data.frame(matrix(nrow = length(std_bin), ncol = ncol(estim_vols)))
+    above_mean_volumes <- data.frame(matrix(nrow = length(std_bin), ncol = ncol(estim_vols)))
+
+    rownames(below_mean_volumes) <- as.character(std_bin)
+    colnames(below_mean_volumes) <- colnames(estim_vols)
+    rownames(above_mean_volumes) <- as.character(std_bin)
+    colnames(above_mean_volumes) <- colnames(estim_vols)
+
+    ## Calculate volume deviations below mean
+    for (c in seq_len(ncol(estim_vols))) {
+      for (ind in seq_along(below_mean_std_vals)) {
+        if (ind < length(below_mean_std_vals)) {
+          filter_list <- dplyr::filter(temp_df, f_const_mean <= below_mean_std_vals[ind] & f_const_mean > below_mean_std_vals[ind + 1])
+          #print(filter_list)
+          below_mean_volumes[ind, c] <- mean(filter_list[, colnames(estim_vols)[c]], na.rm = TRUE) / mean(filter_list[, colnames(uCT_vols)[c]], na.rm = TRUE)
+          print(below_mean_volumes)
+        }
+      }
+    }
+
+    ## Calculate volume deviations above mean
+    for (c in seq_len(ncol(estim_vols))) {
+      for (ind in seq_along(above_mean_std_vals)) {
+        if (ind < length(above_mean_std_vals)) {
+          filter_list <- dplyr::filter(temp_df, f_const_mean >= above_mean_std_vals[ind] & f_const_mean < above_mean_std_vals[ind + 1])
+          above_mean_volumes[ind, c] <- mean(filter_list[, colnames(estim_vols)[c]], na.rm = TRUE) / mean(filter_list[, colnames(uCT_vols)[c]], na.rm = TRUE)
+        }
+      }
+    }
+
+    corrected_volumes <- data.frame(matrix(nrow = nrow(temp_df), ncol = ncol(estim_vols)))
+    correction_factors <- data.frame(matrix(nrow = nrow(temp_df), ncol = ncol(estim_vols)))
+
+    ## Perform value correction for values below the mean
+    for (c in seq_len(ncol(estim_vols))) {
+      for (r in seq_len(nrow(temp_df))) {
+        if (is.nan(temp_df$f_const_mean[r])) {
+          corrected_volumes[r, c] <- NA
+          correction_factors[r, c] <- NA
+        } else {
+          for (e in seq_len(length(below_mean_std_vals) - 1)) {
+            if () {
+                corrected_volumes[r, c] <- NA
+            } else if (temp_df$f_const_mean[r] <= below_mean_std_vals[e] && temp_df$f_const_mean[r] > below_mean_std_vals[e + 1]) {
+              corrected_volumes[r, c] <- temp_df[r, colnames(estim_vols)[c]] / below_mean_volumes[e, c]
+              correction_factors[r, c] <- below_mean_volumes[e, c]
+            }
+          }
+        }
+      }
+    }
+
+    ## Perform value correction for values above the mean
+    for (c in seq_len(ncol(estim_vols))) {
+      for (r in seq_len(nrow(temp_df))) {
+        if (is.nan(temp_df$f_const_mean[r])) {
+          corrected_volumes[r, c] <- NA
+          correction_factors[r, c] <- NA
+        } else {
+          for (e in seq_len(length(above_mean_std_vals) - 1)) {
+            if (is.nan(temp_df$f_const_mean[r])) {
+                corrected_volumes[r, c] <- NA
+            } else if (temp_df$f_const_mean[r] >= above_mean_std_vals[e] && temp_df$f_const_mean[r] < above_mean_std_vals[e + 1]) {
+              corrected_volumes[r, c] <- temp_df[r, colnames(estim_vols)[c]] / above_mean_volumes[e, c]
+              correction_factors[r, c] <- above_mean_volumes[e, c]
+            }
+          }
+        }
+      }
+    }
+
+    colnames(correction_factors) <- paste0("Corr_factor", seq_len(ncol(estim_vols)))
+    correction_factor_list[[index]] <- correction_factors
+
+    colnames(corrected_volumes) <- paste0("Corr_volume", seq_len(ncol(estim_vols)))
+    temp_df <- cbind(temp_df, corrected_volumes)
+    return_list[[index]] <- temp_df
+  }
+
+  names(correction_factor_list) <- names(estimated_tumor_volume_list)
+  correction_factor_list <<- correction_factor_list
+
+  names(return_list) <- names(estimated_tumor_volume_list)
+  return(return_list)
+}
+
+
+
+
+
+
+
+
 
 
 
