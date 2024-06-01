@@ -2126,7 +2126,7 @@ calculate_correction_matrixes = function(correction_factor_lst, corr_method, num
 
 ## This function will estimate the final tumor volumes of the caliper measurements based on the mean f-constant
 ## NOTE: this is a variant of the estimate_tumor_volume function
-estimate_final_tumor_volume = function(input_measurement_list, mean_f_values_list, remove_na_samples) {
+estimate_total_tumor_volume = function(input_measurement_list, mean_f_values_list, remove_na_samples) {
     ##Declare the function variables
 
     #List to return
@@ -2670,7 +2670,7 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
 
 
     ##Create  linear regression plots for visual data QC
-    
+
     #Create the QC plots
     if (rm_na_samples == TRUE) {
 
@@ -2688,20 +2688,46 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
 
     }
 
+    #Initialize a new variable to hold the path to the QC Plots directory
+    qc_plots_dir <- paste0(output_path, "/", "qc_outputs", "/", "Plots")
+
+    #Create a QC directory in the output folder to store the goodness of fit and other quality control test
+    #outputs
+    if (!dir.exists(qc_plots_dir)) {
+        dir.create(qc_plots_dir)
+
+        if (verb == TRUE) {
+            cat("A new folder with the following path:", qc_plots_dir, "\n", 
+            "was created to stor the goodness of fit test and other qc test outputs.")
+        }
+
+    }
+
     #Save the created QC plots
-    for (element in qc_plots) {
+    for (element in seq_along(qc_plots)) {
         #Declare dynamic variables
 
         #Initialize a new list which will contain the current list element of the qc_plots list
         temp_plot_list <- qc_plots[[element]]
         
+        #The outer loop traverses the main plot list
         for (plot in seq_along(temp_plot_list)) {
-            png(filename = paste0(qc_dir, "/", "Plots", "/", names(temp_plot_list)[plot], ".png"), width = 1500, height = 750, units = "px")
+            #Extract the names of each main plot element (original .csv file name without extension)
+            plot_lst_element_name <- stringr::str_extract(string = names(qc_plots)[element], pattern = "[a-zA-Z_\\-\\\\s0-9]+")
+
+            #Construct the final output file name
+            output_plot_name <-  paste0(qc_plots_dir, "/", plot_lst_element_name, "_", names(temp_plot_list)[plot], ".png")
+
+            #Set the output device for saving the plots
+            png(filename = output_plot_name, width = 1500, height = 750, units = "px")
+            
+            #Pring the plot to the output device
             print(temp_plot_list[[plot]])
+
+            #Reset the output device
+            dev.off()
+
         }
-        
-        #Reset the output device
-        dev.off()
 
     }
 
@@ -2747,11 +2773,11 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
 
             #Create the file name for the saved .csv
             file_name <- stringr::str_extract(string = names(corr_total_volumes)[element],
-                pattern = "[a-zA-Z]+[_][a-zA-Z]+")
-            file_name <- paste0(file_name, "corrected_volumes")
+                pattern = "[a-zA-Z0-9]+[_.\\-\\\\s]+[a-zA-Z0-9]+")
+            file_name <- paste0(file_name, "_corrected_volumes")
 
             #Save the result as a .csv
-            readr::write_csv(x = corr_total_volumes[element],
+            readr::write_csv(x = corr_total_volumes[[element]],
                 file = paste0(output_path, "/", file_name, ".csv"))
         }
 
@@ -2772,11 +2798,11 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
 
             #Create the file name for the saved .csv
             file_name <- stringr::str_extract(string = names(corr_total_volumes)[element],
-                pattern = "[a-zA-Z]+[_][a-zA-Z]+")
-            file_name <- paste0(file_name, "corrected_volumes")
+                pattern = "[a-zA-Z0-9]+[_.\\-\\\\s]+[a-zA-Z0-9]+")
+            file_name <- paste0(file_name, "_corrected_volumes")
 
             #Save the result as a .csv
-            readr::write_csv(x = corr_total_volumes[element],
+            readr::write_csv(x = corr_total_volumes[[element]],
                 file = paste0(output_path, "/", file_name, ".csv"))
         }
 
@@ -2791,11 +2817,11 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
 
             #Create the file name for the saved .csv
             file_name <- stringr::str_extract(string = names(estim_total_volumes)[element],
-                pattern = "[a-zA-Z]+[_][a-zA-Z]+")
-            file_name <- paste0(file_name, "estimated_volumes")
+                pattern = "[a-zA-Z0-9]+[_.\\-\\\\s]+[a-zA-Z0-9]+")
+            file_name <- paste0(file_name, "_estimated_volumes")
 
             #Save the result as a .csv
-            readr::write_csv(x = estim_total_volumes[element],
+            readr::write_csv(x = estim_total_volumes[[element]],
                 file = paste0(output_path, "/", file_name, ".csv"))
         }
 
@@ -2827,14 +2853,19 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
             vol_corrected = TRUE)
 
         #Save the projected volume-corrected tumor volumes
-        for (element in corrected_vol_plots) {
+        for (element in seq_along(corrected_vol_plots)) {
             #Declare dynamic variables
 
             #Initialize a new variable which will contain the current plt list element
             temp_plot <- corrected_vol_plots[[element]]
+
+            #Set the name of the output file
+            output_plot_name <- paste0(plot_dir, "/", names(corrected_vol_plots)[element], ".png")
             
-            #Write the plot files to an output device
-            png(filename = paste0(plot_dir, "/", names(corrected_vol_plots)[element], ".png"), width = 1500, height = 750, units = "px")
+            #Set an output dvice
+            png(filename = output_plot_name, width = 1500, height = 750, units = "px")
+            
+            #Print the plot files to an output device
             print(temp_plot)
             
             
@@ -2849,14 +2880,19 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
             vol_corrected = FALSE)
 
         #Save the projected estimated tumor volumes
-        for (element in estimated_vol_plots) {
+        for (element in seq_along(estimated_vol_plots)) {
             #Declare dynamic variables
 
             #Initialize a new variable which will contain the current plt list element
             temp_plot <- estimated_vol_plots[[element]]
+
+            #Set the name of the output file
+            output_plot_name <- paste0(plot_dir, "/", names(estimated_vol_plots)[element], ".png")
             
-            #Write the plot files to an output device
-            png(filename = paste0(plot_dir, "/", names(estimated_vol_plots)[element], ".png"), width = 1500, height = 750, units = "px")
+            #Set an output dvice
+            png(filename = output_plot_name, width = 1500, height = 750, units = "px")
+            
+            #Print the plot files to an output device
             print(temp_plot)
             
             
