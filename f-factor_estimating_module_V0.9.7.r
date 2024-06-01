@@ -2805,27 +2805,26 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
     ##Plot the final growth curves based on the estimated/estimated-corrected volumes
     ##and save the generated plots
 
+    #Initialize a new variable to hold the path to the QC directory
+    plot_dir <- paste0(output_path, "/", "Plots")
+
+    #Create a QC directory in the output folder to store the goodness of fit and other quality control test
+    #outputs
+    if (!dir.exists(plot_dir)) {
+        dir.create(plot_dir)
+
+        if (verb == TRUE) {
+            cat("A new folder with the following path:", plot_dir, "\n", 
+            "was created to stor the goodness of fit test and other qc test outputs.")
+        }
+
+    }
+
     #Plot and save the various projected tumor volumes
     if (volume_correction == TRUE) {
-        
         #Plot the projected volume-corrected tumor volumes
         corrected_vol_plots <- plot_growth_curves(final_vol_lst = corr_total_volumes,
             vol_corrected = TRUE)
-
-        #Initialize a new variable to hold the path to the QC directory
-        qc_dir <- paste0(output_path, "/", "qc_outputs")
-
-        #Create a QC directory in the output folder to store the goodness of fit and other quality control test
-        #outputs
-        if (!dir.exists(qc_dir)) {
-            dir.create(qc_dir)
-
-            if (verb == TRUE) {
-                cat("A new folder with the following path:", qc_dir, "\n", 
-                "was created to stor the goodness of fit test and other qc test outputs.")
-            }
-
-        }
 
         #Save the projected volume-corrected tumor volumes
         for (element in corrected_vol_plots) {
@@ -2834,8 +2833,31 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
             #Initialize a new variable which will contain the current plt list element
             temp_plot <- corrected_vol_plots[[element]]
             
-            png(filename = paste0(qc_dir, "/", "Plots", "/", names(temp_plot_list)[plot], ".png"), width = 1500, height = 750, units = "px")
-            print(temp_plot_list[[plot]])
+            #Write the plot files to an output device
+            png(filename = paste0(plot_dir, "/", names(corrected_vol_plots)[element], ".png"), width = 1500, height = 750, units = "px")
+            print(temp_plot)
+            
+            
+            #Reset the output device
+            dev.off()
+
+        }
+
+    } else {
+        #Plot the projected estimated tumor volumes
+        estimated_vol_plots <- plot_growth_curves(final_vol_lst = estim_total_volumes,
+            vol_corrected = FALSE)
+
+        #Save the projected estimated tumor volumes
+        for (element in estimated_vol_plots) {
+            #Declare dynamic variables
+
+            #Initialize a new variable which will contain the current plt list element
+            temp_plot <- estimated_vol_plots[[element]]
+            
+            #Write the plot files to an output device
+            png(filename = paste0(plot_dir, "/", names(estimated_vol_plots)[element], ".png"), width = 1500, height = 750, units = "px")
+            print(temp_plot)
             
             
             #Reset the output device
@@ -2848,6 +2870,7 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
 }   
 
 
+#################################################               Section end             #################################################
 
 
 
