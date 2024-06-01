@@ -1954,7 +1954,7 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list)
 
 
 
-## Test the corrected volumes using a goodness of fit test
+## Test the fit of the corrected volumes using a goodness of fit test
 gof_test = function(measurement_list, correction = TRUE) {
     ##Define the static function variables
 
@@ -1991,7 +1991,7 @@ gof_test = function(measurement_list, correction = TRUE) {
             #This for loop will traverse the uCT sampling dates
             for (date in seq_along(uCT_sampling_dates)) {
                 #Initialize the contingency table by grabbing the uCT and corrected estimated volumes by the dates
-                cont_table <- t(temp_comp_df[, grep(pattern = date, x = colnames(temp_comp_df))])
+                cont_table <- t(temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))])
 
                 #Run the Chi-square test on the cont table and assign the p-values to the corresponding dataframe
                 chi_sqr_p[, date] <- chisq.test(cont_table)$p.value
@@ -2017,7 +2017,7 @@ gof_test = function(measurement_list, correction = TRUE) {
             #This for loop will traverse the uCT sampling dates
             for (date in seq_along(uCT_sampling_dates)) {
                 #Initialize the contingency table by grabbing the uCT and corrected estimated volumes by the dates
-                cont_table <- t(temp_comp_df[, grep(pattern = date, x = colnames(temp_comp_df))])
+                cont_table <- t(temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))])
 
                 #Run the Chi-square test on the cont table and assign the p-values to the corresponding dataframe
                 chi_sqr_p[, date] <- chisq.test(cont_table)$p.value
@@ -2040,6 +2040,458 @@ gof_test = function(measurement_list, correction = TRUE) {
 
     ##Return the output list
     return(p_val_out_list)
+
+}
+
+
+gof_test = function(measurement_list, correction = TRUE) {
+    ##Define the static function variables
+
+    #Initialize the p_value output list
+    p_val_out_list <- vector(mode = "list", length = length(measurement_list))
+
+
+    ##Start the test
+
+    #This loop will traverse the input measurements list
+    for (index in seq_along(measurement_list)) {
+        ##Define the dynamic function variables
+
+        #Initialize a new temporary df containing all the volume columns
+        temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
+
+        #An if statement controlling which values should be compared the corrected or the normal estimated
+        if (correction == TRUE) {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the corrected estimated volumes
+            temp_corr_df <- temp_vol_df[, grep(pattern = "corr", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
+            
+            #Initialize the contingency table variable
+            cont_table <- data.frame(matrix(nrow = length(uCT_sampling_dates), ncol = nrow(temp_vol_df)))
+
+            #Initialize the dataframe which will hold the calculated p-values
+            chi_sqr_p <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the contingency table by grabbing the uCT and corrected estimated volumes by the dates
+                cont_table <- t(temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))])
+
+                #Run the Chi-square test on the cont table and assign the p-values to the corresponding dataframe
+                chi_sqr_p[, date] <- chisq.test(cont_table)$p.value
+                
+            }
+
+        } else {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the estimated volumes
+            temp_est_df <- temp_vol_df[, grep(pattern = "est", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_est_df)
+            
+            #Initialize the contingency table variable
+            cont_table <- data.frame(matrix(nrow = length(uCT_sampling_dates), ncol = nrow(temp_vol_df)))
+
+            #Initialize the dataframe which will hold the calculated p-values
+            chi_sqr_lst <- vector(mode = "list", length = length(uCT_sampling_dates)) 
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the contingency table by grabbing the uCT and corrected estimated volumes by the dates
+                cont_table <- t(temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))])
+
+                #Run the Chi-square test on the cont table and assign the p-values to the corresponding dataframe
+                chi_sqr_lst[[date]] <- chisq.test(cont_table)
+                
+            }
+
+        }
+
+        #Assign the appropriate colnames to the p-value columns
+        names(chi_sqr_lst) <- paste0("chi_sqr_p-val", uCT_sampling_dates)
+
+        #Assign the p-value containing dataframes to the output list
+        p_val_out_list[[index]] <- chi_sqr_lst
+
+    }
+
+    #Assign the proper list element names to the output list
+    names(p_val_out_list) <- names(measurement_list)
+    
+
+    ##Return the output list
+    return(p_val_out_list)
+
+}
+
+
+
+
+## Test the fit of the corrected volumes using a pearson correlation test
+pearson_test = function(measurement_list, correction = TRUE) {
+    ##Define the static function variables
+
+    #Initialize the p_value output list
+    r_val_out_list <- vector(mode = "list", length = length(measurement_list))
+
+
+    ##Start the test
+
+    #This loop will traverse the input measurements list
+    for (index in seq_along(measurement_list)) {
+        ##Define the dynamic function variables
+
+        #Initialize a new temporary df containing all the volume columns
+        temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
+
+        #An if statement controlling which values should be compared the corrected or the normal estimated
+        if (correction == TRUE) {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the corrected estimated volumes
+            temp_corr_df <- temp_vol_df[, grep(pattern = "corr", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
+            
+            #Initialize the contingency table variable
+            comp_table <- data.frame()
+
+            #Initialize the dataframe which will hold the calculated r-values
+            pearson_corr <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
+                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+
+                #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
+                pearson_corr[, date] <- cor(x = comp_table[, 1], y = comp_table[, 2], method = "pearson")
+                
+            }
+
+        } else {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the corrected estimated volumes
+            temp_corr_df <- temp_vol_df[, grep(pattern = "estim", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
+            
+            #Initialize the contingency table variable
+            comp_table <- data.frame()
+
+            #Initialize the dataframe which will hold the calculated r-values
+            pearson_corr <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
+                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+
+                #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
+                pearson_corr[, date] <- cor(x = comp_table[, 1], y = comp_table[, 2], method = "pearson")
+                
+            }
+        }
+
+        #Assign the appropriate colnames to the p-value columns
+        colnames(pearson_corr) <- paste0("pearson_coeff", uCT_sampling_dates)
+
+        #Assign the p-value containing dataframes to the output list
+        r_val_out_list[[index]] <- pearson_corr
+
+    }
+
+    #Assign the proper list element names to the output list
+    names(r_val_out_list) <- names(measurement_list)
+    
+
+    ##Return the output list
+    return(r_val_out_list)
+
+}
+
+
+
+## Test the fit of the corrected volumes using a Mean Signed Error (MSE) test
+mse_test = function(measurement_list, correction = TRUE) {
+    ##Define the static function variables
+
+    #Initialize the p_value output list
+    mse_val_out_list <- vector(mode = "list", length = length(measurement_list))
+
+
+    ##Start the test
+
+    #This loop will traverse the input measurements list
+    for (index in seq_along(measurement_list)) {
+        ##Define the dynamic function variables
+
+        #Initialize a new temporary df containing all the volume columns
+        temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
+
+        #An if statement controlling which values should be compared the corrected or the normal estimated
+        if (correction == TRUE) {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the corrected estimated volumes
+            temp_corr_df <- temp_vol_df[, grep(pattern = "corr", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
+            
+            #Initialize the contingency table variable
+            comp_table <- data.frame()
+
+            #Initialize the dataframe which will hold the calculated r-values
+            mse_values <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
+                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+
+                #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
+                mse_values[, date] <- mean(comp_table[, 2] - comp_table[, 1], na.rm = TRUE)
+                
+            }
+
+        } else {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the corrected estimated volumes
+            temp_corr_df <- temp_vol_df[, grep(pattern = "estim", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
+            
+            #Initialize the contingency table variable
+            comp_table <- data.frame()
+
+            #Initialize the dataframe which will hold the calculated r-values
+            mse_values <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
+                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+
+                #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
+                mse_values[, date] <- mean(comp_table[, 2] - comp_table[, 1], na.rm = TRUE)
+                
+            }
+        }
+
+        #Assign the appropriate colnames to the p-value columns
+        colnames(mse_values) <- paste0("mse", uCT_sampling_dates)
+
+        #Assign the p-value containing dataframes to the output list
+        mse_val_out_list[[index]] <- mse_values
+
+    }
+
+    #Assign the proper list element names to the output list
+    names(mse_val_out_list) <- names(measurement_list)
+    
+
+    ##Return the output list
+    return(mse_val_out_list)
+
+}
+
+
+
+
+## Test the fit of the corrected volumes using a Mean Absolute Error (MAE) test
+mae_test = function(measurement_list, correction = TRUE) {
+    ##Define the static function variables
+
+    #Initialize the p_value output list
+    mae_val_out_list <- vector(mode = "list", length = length(measurement_list))
+
+
+    ##Start the test
+
+    #This loop will traverse the input measurements list
+    for (index in seq_along(measurement_list)) {
+        ##Define the dynamic function variables
+
+        #Initialize a new temporary df containing all the volume columns
+        temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
+
+        #An if statement controlling which values should be compared the corrected or the normal estimated
+        if (correction == TRUE) {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the corrected estimated volumes
+            temp_corr_df <- temp_vol_df[, grep(pattern = "corr", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
+            
+            #Initialize the contingency table variable
+            comp_table <- data.frame()
+
+            #Initialize the dataframe which will hold the calculated r-values
+            mae_values <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
+                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+
+                #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
+                mae_values[, date] <- mean(abs(comp_table[, 1] - comp_table[, 2]), na.rm = TRUE)
+                
+            }
+
+        } else {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the corrected estimated volumes
+            temp_corr_df <- temp_vol_df[, grep(pattern = "estim", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
+            
+            #Initialize the contingency table variable
+            comp_table <- data.frame()
+
+            #Initialize the dataframe which will hold the calculated r-values
+            mae_values <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
+                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+
+                #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
+                mae_values[, date] <- mean(abs(comp_table[, 1] - comp_table[, 2]), na.rm = TRUE)
+                
+            }
+        }
+
+        #Assign the appropriate colnames to the p-value columns
+        colnames(mae_values) <- paste0("mae", uCT_sampling_dates)
+
+        #Assign the p-value containing dataframes to the output list
+        mae_val_out_list[[index]] <- mae_values
+
+    }
+
+    #Assign the proper list element names to the output list
+    names(mae_val_out_list) <- names(measurement_list)
+    
+
+    ##Return the output list
+    return(mae_val_out_list)
+
+}
+
+
+
+
+## Test the fit of the corrected volumes using a Root Mean Squared Error (RMSE) test
+rmse_test = function(measurement_list, correction = TRUE) {
+    ##Define the static function variables
+
+    #Initialize the p_value output list
+    rmse_val_out_list <- vector(mode = "list", length = length(measurement_list))
+
+
+    ##Start the test
+
+    #This loop will traverse the input measurements list
+    for (index in seq_along(measurement_list)) {
+        ##Define the dynamic function variables
+
+        #Initialize a new temporary df containing all the volume columns
+        temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
+
+        #An if statement controlling which values should be compared the corrected or the normal estimated
+        if (correction == TRUE) {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the corrected estimated volumes
+            temp_corr_df <- temp_vol_df[, grep(pattern = "corr", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
+            
+            #Initialize the contingency table variable
+            comp_table <- data.frame()
+
+            #Initialize the dataframe which will hold the calculated r-values
+            rmse_values <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
+                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+
+                #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
+                rmse_values[, date] <- sqrt(mean((comp_table[, 1] - comp_table[, 2]) ^ 2, na.rm = TRUE))
+                
+            }
+
+        } else {
+            #Initialize a temporary uCT dataframe containing the measured uCT volumes
+            temp_uct_df <- temp_vol_df[, grep(pattern = "uct", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Initialize a temporary uCT dataframe containing the corrected estimated volumes
+            temp_corr_df <- temp_vol_df[, grep(pattern = "estim", x = colnames(temp_vol_df), ignore.case = TRUE)]
+
+            #Merge the uCT and corrected volumes into one comparison dataframe
+            temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
+            
+            #Initialize the contingency table variable
+            comp_table <- data.frame()
+
+            #Initialize the dataframe which will hold the calculated r-values
+            rmse_values <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+
+            #This for loop will traverse the uCT sampling dates
+            for (date in seq_along(uCT_sampling_dates)) {
+                #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
+                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+
+                #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
+                rmse_values[, date] <- sqrt(mean((comp_table[, 1] - comp_table[, 2]) ^ 2, na.rm = TRUE))
+                
+            }
+        }
+
+        #Assign the appropriate colnames to the p-value columns
+        colnames(rmse_values) <- paste0("rmse", uCT_sampling_dates)
+
+        #Assign the p-value containing dataframes to the output list
+        rmse_val_out_list[[index]] <- rmse_values
+
+    }
+
+    #Assign the proper list element names to the output list
+    names(rmse_val_out_list) <- names(measurement_list)
+    
+
+    ##Return the output list
+    return(rmse_val_out_list)
 
 }
 
@@ -2907,7 +3359,5 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
 
 
 #################################################               Section end             #################################################
-
-
 
 
