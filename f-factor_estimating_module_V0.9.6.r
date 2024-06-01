@@ -2183,7 +2183,7 @@ estimate_final_tumor_volume = function(input_measurement_list, mean_f_values_lis
     }
 
     #Name the return_list elements according to the input list
-    names(return_list) <- names(input_measurement_list)
+    names(return_list) <- names(input_list)
 
 
     ## Return the modified dataframes
@@ -2439,7 +2439,7 @@ create_qc_plots = function(unified_list, plot_qc_vol) {
 
 
 ## Create growth curves based on the estimated and corrected volumes
-plot_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
+plot_growth_curves = function(final_vol_lst, vol_corrected) {
     ##Declare static function variables
 
     #Initialize the output plot list
@@ -2470,23 +2470,46 @@ plot_growth_curves = function(final_vol_lst, remove_uct_na_samples = TRUE) {
         #Amend the long_volume dataframe with the dates and volume types
         lng_temp_df <- dplyr::mutate(.data = lng_temp_df, "Vol_type" = vol_type, "Dates" = dates, .after = 4)
 
-        #Plot the individual long pivot dataframes
-        plot <- ggplot2::ggplot(data = lng_temp_df,
-                    mapping = aes(x = Dates, y = Volumes, fill = Mouse_ID, color = Mouse_ID, group = Mouse_ID)) +
-                    ggplot2::geom_point(show.legend = TRUE) +
-                    ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
-                    ggplot2::scale_x_discrete(breaks = unique_dates, labels = as.character(unique_dates)) +
-                    ggplot2::ggtitle(paste0("Projected corrected tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))) +
-                    labs(x = expression("Sampling dates"), y = expression("Tumor volumes mm"^3),
-                        color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
-                    ggplot2::theme_classic() +
-                    ggplot2::theme(plot.title = element_text(hjust = 0.5))
+        if (vol_corrected == TRUE) {
+            #Plot the individual long pivot dataframes
+            plot <- ggplot2::ggplot(data = lng_temp_df,
+                        mapping = aes(x = Dates, y = Volumes, fill = Mouse_ID, color = Mouse_ID, group = Mouse_ID)) +
+                        ggplot2::geom_point(show.legend = TRUE) +
+                        ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
+                        ggplot2::scale_x_discrete(breaks = unique_dates, labels = as.character(unique_dates)) +
+                        ggplot2::ggtitle(paste0("Projection of corrected tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))) +
+                        labs(x = expression("Sampling dates"), y = expression("Tumor volumes mm"^3),
+                            color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
+                        ggplot2::theme_classic() +
+                        ggplot2::theme(plot.title = element_text(hjust = 0.5))
 
-        #Assing the plot to the output list
-        output_plots_list[[index]] <- plot
+            #Assing the plot to the output list
+            output_plots_list[[index]] <- plot
 
-        #Name the output list elements
-        names(output_plots_list)[[index]] <- paste0("Projected corrected tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))
+            #Name the output list elements
+            names(output_plots_list)[[index]] <- paste0("Projection_of_corrected_tumor_volumes_", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))
+
+        } else {
+            #Plot the individual long pivot dataframes
+            plot <- ggplot2::ggplot(data = lng_temp_df,
+                        mapping = aes(x = Dates, y = Volumes, fill = Mouse_ID, color = Mouse_ID, group = Mouse_ID)) +
+                        ggplot2::geom_point(show.legend = TRUE) +
+                        ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
+                        ggplot2::scale_x_discrete(breaks = unique_dates, labels = as.character(unique_dates)) +
+                        ggplot2::ggtitle(paste0("Projection of estimated tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))) +
+                        labs(x = expression("Sampling dates"), y = expression("Tumor volumes mm"^3),
+                            color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
+                        ggplot2::theme_classic() +
+                        ggplot2::theme(plot.title = element_text(hjust = 0.5))
+
+            #Assing the plot to the output list
+            output_plots_list[[index]] <- plot
+
+            #Name the output list elements
+            names(output_plots_list)[[index]] <- paste0("Projection_of_estimated_tumor_volumes_", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))
+
+        }
+        
     }
 
 
@@ -2640,7 +2663,8 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
         p_vals_estim_df <- do.call(rbind, p_vals_estim_vols)
 
         #Write the resulting dataframe as a .csv file
-        readr::write_csv(x = p_vals_estim_df, file = paste0(qc_dir, "/", "Goodness_of_fit_tet_p-values_for_the_estimated_and_fitted_volumes.csv"))
+        readr::write_csv(x = p_vals_estim_df,
+            file = paste0(qc_dir, "/", "Goodness_of_fit_tet_p-values_for_the_estimated_and_fitted_volumes.csv"))
         
     }
 
@@ -2672,7 +2696,7 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
         temp_plot_list <- qc_plots[[element]]
         
         for (plot in seq_along(temp_plot_list)) {
-            png(filename = paste0(names(temp_plot_list)[plot], ".png"), width = 1500, height = 750, units = "px")
+            png(filename = paste0(qc_dir, "/", "Plots", "/", names(temp_plot_list)[plot], ".png"), width = 1500, height = 750, units = "px")
             print(temp_plot_list[[plot]])
         }
         
@@ -2718,6 +2742,19 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
             correction_matrix_lst = correction_matrix_list,
             corr_method = correction_method)
 
+        #Write the resulting dataframe as a .csv
+        for (element in seq_along(corr_total_volumes)) {
+
+            #Create the file name for the saved .csv
+            file_name <- stringr::str_extract(string = names(corr_total_volumes)[element],
+                pattern = "[a-zA-Z]+[_][a-zA-Z]+")
+            file_name <- paste0(file_name, "corrected_volumes")
+
+            #Save the result as a .csv
+            readr::write_csv(x = corr_total_volumes[element],
+                file = paste0(output_path, "/", file_name, ".csv"))
+        }
+
     } else if (volume_correction == TRUE && rm_na_samples == FALSE) {
         
         if (verb == TRUE) {
@@ -2730,14 +2767,83 @@ nonparametric_test = "numeric_outlier_test", plot_qc_volume = "corrected", volum
             correction_matrix_lst = correction_vector_list,
             corr_method = "mean_correction")
 
+        #Write the resulting dataframe as a .csv
+        for (element in seq_along(corr_total_volumes)) {
+
+            #Create the file name for the saved .csv
+            file_name <- stringr::str_extract(string = names(corr_total_volumes)[element],
+                pattern = "[a-zA-Z]+[_][a-zA-Z]+")
+            file_name <- paste0(file_name, "corrected_volumes")
+
+            #Save the result as a .csv
+            readr::write_csv(x = corr_total_volumes[element],
+                file = paste0(output_path, "/", file_name, ".csv"))
+        }
+
     } else if (volume_correction == FALSE) {
 
         if (verb == TRUE) {
             cat("Volume correction was not requested, returning the estimated volumes.")
         }
 
+        #Write the resulting dataframe as a .csv
+        for (element in seq_along(estim_total_volumes)) {
+
+            #Create the file name for the saved .csv
+            file_name <- stringr::str_extract(string = names(estim_total_volumes)[element],
+                pattern = "[a-zA-Z]+[_][a-zA-Z]+")
+            file_name <- paste0(file_name, "estimated_volumes")
+
+            #Save the result as a .csv
+            readr::write_csv(x = estim_total_volumes[element],
+                file = paste0(output_path, "/", file_name, ".csv"))
+        }
+
     }
 
+
+    ##Plot the final growth curves based on the estimated/estimated-corrected volumes
+    ##and save the generated plots
+
+    #Plot and save the various projected tumor volumes
+    if (volume_correction == TRUE) {
+        
+        #Plot the projected volume-corrected tumor volumes
+        corrected_vol_plots <- plot_growth_curves(final_vol_lst = corr_total_volumes,
+            vol_corrected = TRUE)
+
+        #Initialize a new variable to hold the path to the QC directory
+        qc_dir <- paste0(output_path, "/", "qc_outputs")
+
+        #Create a QC directory in the output folder to store the goodness of fit and other quality control test
+        #outputs
+        if (!dir.exists(qc_dir)) {
+            dir.create(qc_dir)
+
+            if (verb == TRUE) {
+                cat("A new folder with the following path:", qc_dir, "\n", 
+                "was created to stor the goodness of fit test and other qc test outputs.")
+            }
+
+        }
+
+        #Save the projected volume-corrected tumor volumes
+        for (element in corrected_vol_plots) {
+            #Declare dynamic variables
+
+            #Initialize a new variable which will contain the current plt list element
+            temp_plot <- corrected_vol_plots[[element]]
+            
+            png(filename = paste0(qc_dir, "/", "Plots", "/", names(temp_plot_list)[plot], ".png"), width = 1500, height = 750, units = "px")
+            print(temp_plot_list[[plot]])
+            
+            
+            #Reset the output device
+            dev.off()
+
+        }
+
+    }
 
 }   
 
