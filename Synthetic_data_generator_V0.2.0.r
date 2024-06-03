@@ -42,7 +42,7 @@ package_controller = function(packages = CRAN_packages) {
                 
                 message(paste0("The following package is not installed: ", element, "\n", 
                 "Installing ", element, "now"))
-                install.packages(element)
+                install.packages(element, repos = "https://mirrors.nic.cz/R/")
 
             }
         }
@@ -57,12 +57,41 @@ package_loader = function(packages = CRAN_packages) {
 }
 
 
+#################################################               Section end             #################################################
 
 
-## Define the paths for the script and I/O files
 
 
-# Define the path to the directory this script is in
+
+
+################################################# MARK: call the package_management functions #################################################
+                                                #                                             #
+
+
+
+
+## Calling the package management function 
+## NOTE: these functions must be called before the path determination for the option parsing and main function, so it can properly assign and modify the input and output directories
+## before the options parsing happens!
+
+package_controller()
+suppressPackageStartupMessages(package_loader())
+
+
+#################################################               Section end             #################################################
+
+
+
+
+
+
+################################################# MARK: Define the paths for the script and I/O files #################################################
+                                                #                                                     #
+
+
+
+
+## Define the path to the directory this script is in
 script_dir_path <- this.path::here()
 setwd(script_dir_path)
 
@@ -781,11 +810,6 @@ main = function(measurements = arguments$number_of_measurements, samples = argum
     treatment = arguments$treatment, treatment_start = arguments$treatment_start, tr_variation_min = arguments$treatment_variation_min, tr_variation_max = arguments$treatment_variation_max,
     cont_treatment = arguments$continuous, format = arguments$format, tr_group_id = arguments$treatment_group_id, tr_type = arguments$treatment_type,
     plot = arguments$plot, save_pl = arguments$save_plots, output_path = arguments$output_path) {
-        ##Call the package management subfunctions 
-        package_controller()
-        suppressPackageStartupMessages(package_loader())
-
-
         ##Call the create dates subfunction if requested
         if (rdates == TRUE) {
             Dates <- create_dates(no_of_days = measurements, start_date = sdate, by_days = bydays)
