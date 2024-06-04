@@ -125,7 +125,7 @@ options_list <- list(
     help = "This argument controls if the model should be based on exponential or logistical growth rates. To choose between the growth models type either 'exponential' or 'logistical'.
     By default the growth model is set to 'exponential'."),
 
-     optparse::make_option(opt_str = c("--carrying_capacity"), action = "store", type = "integer", default = 15,
+    optparse::make_option(opt_str = c("--carrying_capacity"), action = "store", type = "integer", default = 15,
     help = "This argument takes an integer which defines the carrying capacity (a constant which limits tumor volume growth) for the logistical growth model.
     By default the initial carrying capacity is set to 15."),
 
@@ -192,7 +192,7 @@ options_list <- list(
 
     optparse::make_option(opt_str = c("--continuous_treatment"), action = "store_true", default = TRUE, dest = "continuous",
     help = "This argument controls if the growth limiting treatment effects should be applied continuously during random measurement generation, or only once,
-    followed by a subtraction of treatment effect values form the already calculated growth values. The latter will mimic the effects of a one time treatment, 
+    followed by a subtraction of treatment effect values from the already calculated growth values. The latter will mimic the effects of a one time treatment, 
     followed by a normal growth recovery.
     By default the option is set to TRUE, to mimic a continuous treatment effect."),
 
