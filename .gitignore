@@ -13,12 +13,10 @@
 .vscode
 
 #Ignore test scripts
-IO_manager_test.r
-plotting_test.r
+
 
 #Ignore actual COMIX scripts
-COMIX_xenograft_volume_plotting.r
-COMIX_aggregate_plots_with_SEM.r
+
 
 
 #Ignore directories
@@ -27,3 +25,4 @@ Input_files/
 Intermediate_IO/
 Output_files/
 Raw_input_files/
+Synthetic_data_files/
