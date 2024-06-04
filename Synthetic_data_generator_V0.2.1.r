@@ -77,7 +77,7 @@ package_loader = function(packages = CRAN_packages) {
 ## before the options parsing happens!
 
 package_controller()
-suppressPackageStartupMessages(package_loader())
+suppressMessages(package_loader())
 
 
 #################################################               Section end             #################################################
@@ -318,6 +318,12 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
     #A list containing the LxW variables for the f-factor estimation
     LxW_values_list <- vector(mode = "list", length = number_of_measurements)
 
+    #A list containing the L variables for standard tumor volume estimation
+    L_values_list <- vector(mode = "list", length = number_of_measurements)
+
+    #A list containing the W variables for standard tumor volume estimation
+    W_values_list <- vector(mode = "list", length = number_of_measurements)
+
     #Vectors containing the names of the samples (rownames) and the measurement dates (colnames) for the output dataframe
     sample_names <- vector(mode = "character", length = number_of_samples)
     measurement_dates <- vector(mode = "character", length = length(number_of_measurements))
@@ -325,9 +331,12 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
     #The output dataframes containing the generated synthetic tumor volume or LxW measurements
     output_volume_dataframe <- data.frame(matrix(nrow = number_of_samples, ncol = length(number_of_measurements)))
     output_LxW_dataframe <- data.frame(matrix(nrow = number_of_samples, ncol = length(number_of_measurements)))
+    output_L_dataframe <- data.frame(matrix(nrow = number_of_samples, ncol = length(number_of_measurements)))
+    output_W_dataframe <- data.frame(matrix(nrow = number_of_samples, ncol = length(number_of_measurements)))
+
 
     #A list containing the final output dataframes
-    final_output_list <- vector(mode = "list", length = 2)
+    final_output_list <- vector(mode = "list", length = 4)
     
     
     ##Initialize function variables
@@ -375,6 +384,8 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
             #Declare the dynamic volume and LxW variables (this needs to be reset for every sample, hence it is declared inside the main loop)
             volume <- vector(mode = "numeric", length = nMeasurements)
             LxW_value <- vector(mode = "numeric", length = nMeasurements)
+            L_values <- vector(mode = "numeric", length = nMeasurements)
+            W_values <- vector(mode = "numeric", length = nMeasurements)
 
             #This inner loop is responsible for creating a single sample which has the corresponding number of L, W and H measurements (dimensions)
             for (dim in dimensions) {
@@ -456,6 +467,8 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
             for (ind in seq_len(nMeasurements)) {
                 volume[ind] <- (4 / 3) * pi * (sample$L[ind] / 2) * (sample$W[ind] / 2) * (sample$H[ind] / 2)
                 LxW_value[ind] <- (sample$L[ind]) * (sample$W[ind])
+                L_values[ind] <- sample$L[ind]
+                W_values[ind] <- sample$W[ind]
 
             }
             
@@ -464,6 +477,12 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
 
             #Add the calculated LxW values to a list of samples
             LxW_values_list[[element]] <- LxW_value
+
+            #Add the calculated LxW values to a list of samples
+            L_values_list[[element]] <- L_values
+
+            #Add the calculated LxW values to a list of samples
+            W_values_list[[element]] <- W_values
 
         }
 
@@ -474,6 +493,8 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
             #Declare the dynamic volume and LxW variables (this needs to be reset for every sample, hence it is declared inside the main loop)
             volume <- vector(mode = "numeric", length = nMeasurements)
             LxW_value <- vector(mode = "numeric", length = nMeasurements)
+            L_values <- vector(mode = "numeric", length = nMeasurements)
+            W_values <- vector(mode = "numeric", length = nMeasurements)
 
             #This inner loop is responsible for creating a single sample which has the corresponding number of L, W and H measurements (dimensions)
             for (dim in dimensions) {
@@ -556,6 +577,8 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
             for (ind in seq_len(nMeasurements)) {
                 volume[ind] <- (4 / 3) * pi * (sample$L[ind] / 2) * (sample$W[ind] / 2) * (sample$H[ind] / 2)
                 LxW_value[ind] <- (sample$L[ind]) * (sample$W[ind])
+                L_values[ind] <- sample$L[ind]
+                W_values[ind] <- sample$W[ind]
 
             }
             
@@ -564,6 +587,12 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
 
             #Add the calculated LxW values to a list of samples
             LxW_values_list[[element]] <- LxW_value
+
+            #Add the calculated LxW values to a list of samples
+            L_values_list[[element]] <- L_values
+
+            #Add the calculated LxW values to a list of samples
+            W_values_list[[element]] <- W_values
 
         }
         
@@ -578,6 +607,12 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
     #Convert the output LxW list into an LxW dataframe
     output_LxW_dataframe <- as.data.frame(do.call(rbind, LxW_values_list))
 
+    #Convert the output LxW list into an LxW dataframe
+    output_L_dataframe <- as.data.frame(do.call(rbind, L_values_list))
+
+    #Convert the output LxW list into an LxW dataframe
+    output_W_dataframe <- as.data.frame(do.call(rbind, W_values_list))
+
     #An if statement controlling if the cols should be named with dates
     if (request_dates == TRUE) {
         #Name the rows and columns of the output dataframes
@@ -585,11 +620,17 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
         rownames(output_volume_dataframe) <- sample_names
         colnames(output_LxW_dataframe) <- measurement_dates
         rownames(output_LxW_dataframe) <- sample_names
+        colnames(output_L_dataframe) <- measurement_dates
+        rownames(output_L_dataframe) <- sample_names
+        colnames(output_W_dataframe) <- measurement_dates
+        rownames(output_W_dataframe) <- sample_names
 
     } else {
         #Name the rows of the output dataframes
         rownames(output_volume_dataframe) <- sample_names
         rownames(output_LxW_dataframe) <- sample_names
+        rownames(output_L_dataframe) <- sample_names
+        rownames(output_W_dataframe) <- sample_names
 
     }
     
@@ -597,9 +638,11 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
     #Add the output dataframe to the final output list
     final_output_list[[1]] <- output_volume_dataframe
     final_output_list[[2]] <- output_LxW_dataframe
+    final_output_list[[3]] <- output_L_dataframe
+    final_output_list[[4]] <- output_W_dataframe
 
     #Name the final output list elements
-    names(final_output_list) <- c("Tumor_volumes", "Tumor_LxW_values")
+    names(final_output_list) <- c("Tumor_volumes", "Tumor_LxW_values", "Tumor_L_values", "Tumor_W_values")
     
 
     ##Return the output dataframe
@@ -627,7 +670,7 @@ format_tumor_data = function(data, treatment_group_id, treatment) {
     ##Declare function variables
 
     #Declare the output list
-    output_list <- vector(mode = "list", length = 2)
+    output_list <- vector(mode = "list", length = 4)
 
 
     ##Start the dynamic variable declaration and transformation process
@@ -653,10 +696,17 @@ format_tumor_data = function(data, treatment_group_id, treatment) {
         if (names(data[i]) == "Tumor_volumes") {
             #Initialize the modified column names of the transformed df
             new_column_names <- paste0("uCT_volume", "_", colnames(input_data))
-        } else {
+        } else if (names(data[i]) == "Tumor_LxW_values") {
             #Initialize the modified column names of the transformed df
             new_column_names <- paste0("LxW", "_", colnames(input_data))
 
+        } else if (names(data[i]) == "Tumor_L_values") {
+            #Initialize the modified column names of the transformed df
+            new_column_names <- paste0("L", "_", colnames(input_data))
+
+        } else if (names(data[i]) == "Tumor_W_values") {
+            #Initialize the modified column names of the transformed df
+            new_column_names <- paste0("W", "_", colnames(input_data))
         }
         
 
@@ -757,14 +807,13 @@ plot_tumor_volumes = function(data, number_of_measurements, number_of_samples, d
     
     #Adjust the Days_post_treatment_column
     long_df$Days_post_treatment <- as.numeric(stringr::str_remove_all(string = long_df$Days_post_treatment, pattern = "[a-zA-Z]"))
-    print(long_df)
 
     ## Plot the resulting unified dataframes
     if (formatted_data == TRUE) {
         Volume_plot <- suppressMessages(ggplot2::ggplot(data = long_df,
                     mapping = aes(x = Days_post_treatment, y = Volumes, fill = Mouse_ID, color = Mouse_ID)) +
                     ggplot2::geom_point(show.legend = TRUE) +
-                    ggplot2::geom_line(show.legend = FALSE, linewidth = 1) +
+                    ggplot2::geom_line(show.legend = FALSE, linewidth = 0.5) +
                     #ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
                     ggplot2::scale_x_continuous(breaks = days, labels = as.character(days)) +
                     ggplot2::ggtitle("Projected tumor volumes") +
@@ -777,7 +826,7 @@ plot_tumor_volumes = function(data, number_of_measurements, number_of_samples, d
         Volume_plot <-suppressMessages(ggplot2::ggplot(data = long_df,
                     mapping = aes(x = Days_post_treatment, y = Volumes, fill = Sample_ID, color = Sample_ID)) +
                     ggplot2::geom_point(show.legend = TRUE) +
-                    ggplot2::geom_line(show.legend = FALSE, linewidth = 1) +
+                    ggplot2::geom_line(show.legend = FALSE, linewidth = 0.5) +
                     #ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
                     ggplot2::scale_x_continuous(breaks = days, labels = as.character(days)) +
                     ggplot2::ggtitle("Projected tumor volumes") +
