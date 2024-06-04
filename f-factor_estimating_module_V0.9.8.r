@@ -6,6 +6,7 @@
 #                                       #
 #   Tumor measurement data processing   #
 #         Volume calculation            #
+#       by Gabor Bakos (UBE2C)          #
 #                                       #
 #########################################
 
@@ -14,8 +15,8 @@
 
 
 
-################################################# MARK: Package and path #################################################
-                                                #       management       #
+################################################# MARK: Package management #################################################
+                                                #       functions       #
 
 
 
@@ -41,7 +42,7 @@ package_controller = function(packages = CRAN_packages) {
                 
                 message(paste0("The following package is not installed: ", element, "\n", 
                 "Installing ", element, "now"))
-                install.packages(element)
+                install.packages(element, repos = "https://mirrors.nic.cz/R/")
 
             } 
         }
@@ -57,15 +58,42 @@ package_loader = function(packages = CRAN_packages) {
 }
 
 
+################################################# MARK: call the package_management functions #################################################
+                                                #                                             #
 
 
-## Define the paths for the script and I/O files
 
 
-# Define the main path to the directory this script is in
+## Calling the package management function 
+## NOTE: these functions must be called before the path determination for the option parsing and main function, so it can properly assign and modify the input and output directories
+## before the options parsing happens!
+package_controller()
+suppressPackageStartupMessages(package_loader())
+
+
+#################################################               Section end             #################################################
+
+
+
+
+
+
+################################################# MARK: path management #################################################
+                                                #                                                     #
+
+
+
+
+## Define the main path to the directory this script is in
 # NOTE: Unless specified otherwise this directory will be used adn an I/O directory
 script_dir_path <- this.path::here()
 setwd(script_dir_path)
+
+#Define the default input path (where the script is located)
+def_input_path <- script_dir_path
+
+#Define the default output path (where the script is located)
+def_output_path <- script_dir_path
 
 # Define the preferred input directory path
 input_path <- paste0(script_dir_path, "/", "Input_files")
@@ -179,26 +207,35 @@ dir_management()
 ## Add command line arguments
 options_list <- list(
     optparse::make_option(opt_str = c("-p", "--input_path"), action = "store", type = "character", default = def_input_path,
-    help = "This argument takes a character string which defines the path to the input .csv files ready to be processed. \n
+    help = "This argument takes a character string which defines the path to the input .csv files used for the volume estimation.
     By default the script sets the local directory as path."),
 
     optparse::make_option(opt_str = c("-o", "--output_path"), action = "store", type = "character", default = def_output_path,
-    help = "This argument takes a character string which defines the output path to the output .csv files after processing. \n
-    By default the path is called Intermediate_IO, which is a directory found under the local directory."),
-
-    optparse::make_option(opt_str = c("-n", "--output_name"), action = "store", type = "character", default = def_output_name,
-    help = "This argument takes a character string which defines the name of the output .csv files. \n
-    By default the script sets the name to processed_output_table."),
+    help = "This argument takes a character string which defines the output path to the output files following volume estimation.
+    By default the script sets the local directory as path.
+    NOTE: Please note that additional output directories will be created for better file organization."),
 
     optparse::make_option(opt_str = c("-v", "--verbose"), action = "store_true", default = FALSE, dest = "verbose",
-    help = "This argument controls if the program returns additional information like the outputs of the sub-functions, messages and warnings. \n
+    help = "This argument controls if the program returns additional information like various messages and warnings.
     By default the option is set to FALSE."),
 
-    optparse::make_option(opt_str = c("-q", "--quiet"), action = "store_true", default = FALSE, dest = "quiet"),
+    optparse::make_option(opt_str = c("--separator"), action = "store", type = "character", default = ";",
+    help = "This argument takes a character which defines the separator used in the input .csv files.
+    By default the script sets the separator to a semicolon ';'."),
+
+    optparse::make_option(opt_str = c("--remove_na_samples"), action = "store_true", default = FALSE, dest = "rm_na_samples",
+    help = "This argument takes a boolean as a value to determine if sporadic NA containing samples should be removed during the volume estimation.
+    Please note that the columns, (measurement dates) containing only NAs will stil be removed, regardless of this option as it controls only the
+    handling of sporadic NAs in samples (rows).
+    By default the option is set to FALSE"),
 
     optparse::make_option(opt_str = c("-t", "--nonparam_test"), default = "numeric_outlier_test"),
 
-    optparse::make_option(opt_str = c("--outlier_handling"), default = "detect"),
+    optparse::make_option(opt_str = c("--outlier_handling"), action = "store", type = "character", default = "detect",
+    help = "This argument takes a character string which controls how outliers among the calculated f-factors should be handled.
+    The options are 'detect', which should inform the user about the presence of an outlier, 'remove' which should inform the user of a presence of an outlier
+    and then remove the outlier for further calculations, and 'none' which will neither detect nor remove any outliers among the calculated f-constants.
+    By default the option is set to 'detect'."),
 
     optparse::make_option(opt_str = c("--correction"))
 
@@ -1494,6 +1531,11 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 ## IMPORTANT NOTE: this function seems to work, but is a bit cobbled together as I'm not very familiar with while loops. Therefore please if you have more
 ## experience with them check and debug this bad boy! :)
 outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_output_list, nonparam_test) {
+    ##Define the function variables
+
+    #Outlier free output list
+    outlier_free_output_list <- vector(mode = "list", length = length(calculate_f_constants_output_list))
+    
     for (index in seq_along(is_data_normal_output_list)) {
         if (is_data_normal_output_list[[index]]$p.value < 0.05) {
             message("\nIt seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection and removal.")
@@ -1503,7 +1545,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
                 message(names(calculate_f_constants_output_list)[[index]])
 
                 #Run the appropriate outlier cleaner function and assign the result to the appropriate output list element
-                calculate_f_constants_output_list[[index]] <- remove_outlier_f_const_NOTest(calculate_f_constants_output_list[[index]])
+                outlier_free_output_list[[index]] <- remove_outlier_f_const_NOTest(calculate_f_constants_output_list[[index]])
                 
             } else if (nonparam_test == "mZscore_test") {
                 #Print the name of the current list element for better orientation
@@ -1518,7 +1560,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
                     result <- remove_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[index]], left_tail = TRUE)
 
                     #Assign the appropriate outlier cleaner function's result to the appropriate output list element
-                    calculate_f_constants_output_list[[index]] <- result[[1]]
+                    outlier_free_output_list[[index]] <- result[[1]]
 
                     #Update while_loop_run's eval parameter based on outliers_found
                     while_loop_run <- result[[2]]  
@@ -1534,7 +1576,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
                     result <- remove_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[index]], left_tail = FALSE)
 
                     #Assign the appropriate outlier cleaner function's result to the appropriate output list element
-                    calculate_f_constants_output_list[[index]] <- result[[1]]
+                    outlier_free_output_list[[index]] <- result[[1]]
 
                     #Update while_loop_run's eval parameter based on outliers_found
                     while_loop_run <- result[[2]]
@@ -1559,7 +1601,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
                 result <- remove_outlier_f_const_Grubbs(calculate_f_constants_output_list[[index]], left_tail = TRUE)
 
                 #Assign the appropriate outlier cleaner function's result to the appropriate output list element
-                calculate_f_constants_output_list[[index]] <- result[[1]]
+                outlier_free_output_list[[index]] <- result[[1]]
 
                 #Update while_loop_run's eval parameter based on outliers_found
                 while_loop_run <- result[[2]]
@@ -1575,7 +1617,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
                 result <- remove_outlier_f_const_Grubbs(calculate_f_constants_output_list[[index]], left_tail = FALSE)
 
                 #Assign the appropriate outlier cleaner function's result to the appropriate output list element
-                calculate_f_constants_output_list[[index]] <- result[[1]]
+                outlier_free_output_list[[index]] <- result[[1]]
 
                 #Update while_loop_run's eval parameter based on outliers_found
                 while_loop_run <- result[[2]]
@@ -1587,7 +1629,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
 
     ## Return the outlier free output list
-    return(calculate_f_constants_output_list)
+    return(outlier_free_output_list)
 }
 
 
@@ -2816,7 +2858,7 @@ plot_growth_curves = function(final_vol_lst, vol_corrected) {
 
 
 ## The main function which will be called when the program is launched
-main = function(input_path, output_path, sep = ";", verb = FALSE, rm_na_samples = TRUE, detect_fc_outliers = TRUE, remove_fc_outliers = FALSE,
+main = function(input_path, output_path, sep = ";", verb = FALSE, rm_na_samples = TRUE, outlier_handling = "detect",
 nonparametric_test = "numeric_outlier_test", model_prescision_test = "rmse", plot_qc_volume = "corrected", volume_correction = TRUE, correction_method = "linear_correction") {
     ##Call the package management functions
     package_loader()
@@ -2864,22 +2906,28 @@ nonparametric_test = "numeric_outlier_test", model_prescision_test = "rmse", plo
 
     #Determine if potential outliers should only be detected or right away removed for the grand mean
     #f-constant calculation
-    if (detect_fc_outliers == TRUE && remove_fc_outliers == FALSE) {
+    if (outlier_handling == "detect") {
+        if (verb == TRUE) {
+            cat("Outlier f-constant value detection was requested.")
+        }
+
         outlier_detector(calculate_f_constants_output_list = unif_mData_f_const,
             is_data_normal_output_list = is_normal_data,
             nonparam_test = nonparametric_test)
-    } else if (detect_fc_outliers == FALSE && remove_fc_outliers == FALSE) {
+
+    } else if (outlier_handling == "remove") {
         if (verb == TRUE) {
-            message("Outlier detection to find outliers among the calculated f-constants and outlier removal were not requested.")
+            cat("Outlier f-constant value detection and removal was requested.")
         }
-    } else if (detect_fc_outliers == FALSE && remove_fc_outliers == TRUE) {
-        unif_mData_f_const <- outlier_cleaner(calculate_f_constants_output_list = unif_mData_f_const,
+        
+        unif_mData_clean_f_const <- outlier_cleaner(calculate_f_constants_output_list = unif_mData_f_const,
         is_data_normal_output_list = is_normal_data,
         nonparam_test = nonparametric_test)
 
-    } else if (detect_fc_outliers == TRUE && remove_fc_outliers == TRUE) {
-        cat("The two conditions 'detect_fc_outliers' and 'remove_fc_outliers' cannot be true at the same time.\n", file = stderr())
-        quit(status = 1)
+    } else if (outlier_handling == "none") {
+        if (verb == TRUE) {
+            message("Neither outlier detection to find outliers among the calculated f-constants or outlier removal was requested.")
+        }
     }
 
 
@@ -2888,7 +2936,16 @@ nonparametric_test = "numeric_outlier_test", model_prescision_test = "rmse", plo
     
     #Calculate the grand mean f-constatnts to each treatment condition based
     #on the sample mean f-constants
-    grand_fc_means <- calc_mean_f(calculate_f_constants_output_list = unif_mData_f_const)
+    #Note: the calculation will be affetect by the presence or absence of possible outliers whihc is controlled
+    #by the previous outlier handling
+    if (outlier_handling == "detect") {
+        grand_fc_means <- calc_mean_f(calculate_f_constants_output_list = unif_mData_f_const)
+
+    } else if (outlier_handling == "remove") {
+        grand_fc_means <- calc_mean_f(calculate_f_constants_output_list = unif_mData_clean_f_const)
+
+    }
+    
 
 
     #Estimate the tumor volume for the trimmed down measurment data which will be
