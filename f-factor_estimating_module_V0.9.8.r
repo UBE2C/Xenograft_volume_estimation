@@ -207,37 +207,44 @@ dir_management()
 ## Add command line arguments
 options_list <- list(
     optparse::make_option(opt_str = c("-p", "--input_path"), action = "store", type = "character", default = def_input_path,
-    help = "This argument takes a character string which defines the path to the input .csv files used for the volume estimation.
+    help = "This argument takes a character string as input which defines the path to the input .csv files used for the volume estimation.
     By default the script sets the local directory as path."),
 
     optparse::make_option(opt_str = c("-o", "--output_path"), action = "store", type = "character", default = def_output_path,
-    help = "This argument takes a character string which defines the output path to the output files following volume estimation.
+    help = "This argument takes a character string as input which defines the output path to the output files following volume estimation.
     By default the script sets the local directory as path.
     NOTE: Please note that additional output directories will be created for better file organization."),
 
     optparse::make_option(opt_str = c("-v", "--verbose"), action = "store_true", default = FALSE, dest = "verbose",
-    help = "This argument controls if the program returns additional information like various messages and warnings.
+    help = "This argument takes a boolean as input and it controls if the program returns additional information like various messages and warnings.
     By default the option is set to FALSE."),
 
     optparse::make_option(opt_str = c("--separator"), action = "store", type = "character", default = ";",
-    help = "This argument takes a character which defines the separator used in the input .csv files.
+    help = "This argument takes a character as input which defines the separator used in the input .csv files.
     By default the script sets the separator to a semicolon ';'."),
 
     optparse::make_option(opt_str = c("--remove_na_samples"), action = "store_true", default = FALSE, dest = "rm_na_samples",
-    help = "This argument takes a boolean as a value to determine if sporadic NA containing samples should be removed during the volume estimation.
-    Please note that the columns, (measurement dates) containing only NAs will stil be removed, regardless of this option as it controls only the
+    help = "This argument takes a boolean as input to determine if sporadic NA containing samples should be removed during the volume estimation.
+    Please note that the columns, (measurement dates) containing only NAs will still be removed, regardless of this option as it controls only the
     handling of sporadic NAs in samples (rows).
     By default the option is set to FALSE"),
 
-    optparse::make_option(opt_str = c("-t", "--nonparam_test"), default = "numeric_outlier_test"),
-
     optparse::make_option(opt_str = c("--outlier_handling"), action = "store", type = "character", default = "detect",
-    help = "This argument takes a character string which controls how outliers among the calculated f-factors should be handled.
+    help = "This argument takes a character string as input which controls how outliers among the calculated f-factors should be handled.
     The options are 'detect', which should inform the user about the presence of an outlier, 'remove' which should inform the user of a presence of an outlier
     and then remove the outlier for further calculations, and 'none' which will neither detect nor remove any outliers among the calculated f-constants.
     By default the option is set to 'detect'."),
 
-    optparse::make_option(opt_str = c("--correction"))
+    optparse::make_option(opt_str = c("-t", "--nonparametric_outlier_test"), action = "store", type = "character", default = "numeric_outlier_test",
+    help = "This argument takes a character string as input that controls which nonparametric outlier test should be performed for the detection/removal of the f-constant outliers.
+    The options are 'numeric_outlier_test' which is the more common approach, or 'mZscore_test' which is a modified version of the Z-score test.
+    NOTE: the modified Z-score test is a non-standard approach and should be approached with care.
+    By default the option is set to 'numeric_outlier_test'."),
+
+    optparse::make_option(opt_str = c("-p", "--precision_test"), action = "store", type = "character", default = "rsme",
+    help = "This argument takes a character string as input which controls how the model prediction error should be calculated. The resulting errors can be used to evaluate prediction precision.
+    The options are 'rsme' to perform a Root Mean Squared Error test, or 'mae' to perform a Median Absolue Error test.
+    By default the option is set to 'rsme'.")
 
 )
 
@@ -284,14 +291,14 @@ read_uCT_data = function(data_path, separator) {
     input_files <- list.files(path = data_path)
     
     #Grep the uCT file names for the checking if statement
-    uCT_file_names <- input_files[grep(pattern = "uCT", x = input_files, ignore.case = TRUE)]
+    uCT_file_names <- input_files[grep(pattern = "uct", x = input_files, ignore.case = TRUE)]
 
     #This main if statement will check if the correct files are in the folder
     if (length(uCT_file_names) > 0) {
         
         #Read each uCT .csv file and add them to the output list
         for (item in input_files) {
-            if (grepl(pattern = "uCT", x = item, ignore.case = TRUE) == TRUE) {
+            if (grepl(pattern = "uct", x = item, ignore.case = TRUE) == TRUE) {
                 uCT_measurements[[item]] <- read.csv(file = paste0(data_path, "/", item), sep = separator)
             }
         }
@@ -1830,28 +1837,28 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list)
         ##Declare dynamic function variables
 
         #Define a vector for the standard deviation bins
-        std_bin <- vector(mode = "numeric", length = 5)
+        std_bin <- vector(mode = "numeric", length = 11)
 
         #Define a vector containing the standard deviations of 0.5-2 SD below mean
-        below_mean_std_vals <- vector(mode = "numeric", length = 5)
-        names(below_mean_std_vals) <- as.character(seq(from = 0, to = 2, by = 0.5))
+        below_mean_std_vals <- vector(mode = "numeric", length = 11)
+        names(below_mean_std_vals) <- as.character(seq(from = 0, to = 5, by = 0.5))
 
         #Define a vector containing the standard deviations of 0.5-2 SD above mean
-        above_mean_std_vals <- vector(mode = "numeric", length = 5)
-        names(above_mean_std_vals) <- as.character(seq(from = 0, to = 2, by = 0.5))
+        above_mean_std_vals <- vector(mode = "numeric", length = 11)
+        names(above_mean_std_vals) <- as.character(seq(from = 0, to = 5, by = 0.5))
 
         #Define a vector containing the tumor volume deviation (in percentage) of 0.5-2 SD below mean
-        below_mean_volumes <- data.frame(matrix(nrow = 5, ncol = 2))
-        rownames(below_mean_volumes) <- as.character(seq(from = 0, to = 2, by = 0.5))
+        below_mean_volumes <- data.frame(matrix(nrow = 11, ncol = 2))
+        rownames(below_mean_volumes) <- as.character(seq(from = 0, to = 5, by = 0.5))
         colnames(below_mean_volumes) <- paste0("vol_deviation", uCT_sampling_dates)
 
         #Define a vector containing the tumor volume deviation (in percentage) of 0.5-2 SD above mean
-        above_mean_volumes <- data.frame(matrix(nrow = 5, ncol = 2))
-        rownames(above_mean_volumes) <- as.character(seq(from = 0, to = 2, by = 0.5))
+        above_mean_volumes <- data.frame(matrix(nrow = 11, ncol = 2))
+        rownames(above_mean_volumes) <- as.character(seq(from = 0, to = 5, by = 0.5))
         colnames(below_mean_volumes) <- paste0("vol_deviation", uCT_sampling_dates)
 
         #Define a dynamic filter_df
-        filter_list <- vector(mode = "list", length = 4)
+        filter_list <- vector(mode = "list", length = 10)
 
         #Define the standard deviation variable
         temp_std <- vector(mode = "numeric", length = 1)
@@ -1870,14 +1877,14 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list)
         temp_std <- sd(temp_df$f_const_mean, na.rm = TRUE)
 
         #Assign the standard deviation fractions
-        std_bin <- seq(from = 0, to = 2, by = 0.5)
+        std_bin <- seq(from = 0, to = 5, by = 0.5)
 
         #Assign the standard deviations below mean (we start with 0 - the mean - and go down by half a sd compared to the mean)
         below_mean_std_vals <- mean_f_values_list[[index]] - (temp_std * std_bin)
         
         #Assign the standard deviations above mean (we start with 0 - the mean - and go up by half a sd compared to the mean)
         above_mean_std_vals <- mean_f_values_list[[index]] + (temp_std * std_bin)
-
+        
         #Assign the tumor volume deviation below mean (in this case the tumor volumes are
         #over-estimated)
         for (c in seq_len(ncol(estim_vols))) {
@@ -1901,7 +1908,7 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list)
             }
 
         }
-        
+
         #corrected_volumes <- vector(mode = "numeric", length = nrow(temp_df))
         corrected_volumes <- data.frame(matrix(nrow = nrow(temp_df), ncol = 2))
         correction_factors <- data.frame(matrix(nrow = nrow(temp_df), ncol = 2))
@@ -2858,13 +2865,8 @@ plot_growth_curves = function(final_vol_lst, vol_corrected) {
 
 
 ## The main function which will be called when the program is launched
-main = function(input_path, output_path, sep = ";", verb = FALSE, rm_na_samples = TRUE, outlier_handling = "detect",
-nonparametric_test = "numeric_outlier_test", model_prescision_test = "rmse", plot_qc_volume = "corrected", volume_correction = TRUE, correction_method = "linear_correction") {
-    ##Call the package management functions
-    package_loader()
-    package_controller()
-
-
+main = function(input_path, output_path, sep = ";", verb = FALSE, rm_na_samples = TRUE, outlier_handling = "detect", nonparametric_test = "numeric_outlier_test",
+model_prescision_test = "rmse", volume_correction = TRUE, correction_method = "linear_correction") {
     ##Load and clean the required data
 
     #Load the uCT and caliper measurements as lists
@@ -2946,8 +2948,6 @@ nonparametric_test = "numeric_outlier_test", model_prescision_test = "rmse", plo
 
     }
     
-
-
     #Estimate the tumor volume for the trimmed down measurment data which will be
     #used for further QC
     unif_mData_estim_vols <- estimate_tumor_volume(input_measurement_list = unif_mData_f_const,
@@ -3054,8 +3054,11 @@ nonparametric_test = "numeric_outlier_test", model_prescision_test = "rmse", plo
     #Create the QC plots
     if (rm_na_samples == TRUE) {
 
-        qc_plots <- create_qc_plots(unified_list = unif_mData_corr_vols,
-            plot_qc_vol = plot_qc_volume)
+        qc_plots_estim <- create_qc_plots(unified_list = unif_mData_corr_vols,
+            plot_qc_vol = "estimated")
+
+        qc_plots_corr <- create_qc_plots(unified_list = unif_mData_corr_vols,
+            plot_qc_vol = "corrected")
 
     } else if (rm_na_samples == FALSE) {
 
@@ -3063,8 +3066,11 @@ nonparametric_test = "numeric_outlier_test", model_prescision_test = "rmse", plo
             cat("As the NA value containing samples were not removed during data cleaning some samples containing NA values might not be plotted!")
         }
 
-        qc_plots <- create_qc_plots(unified_list = unif_mData_corr_vols,
-            plot_qc_vol = plot_qc_volume)
+        qc_plots_estim <- create_qc_plots(unified_list = unif_mData_corr_vols,
+            plot_qc_vol = "estimated")
+
+        qc_plots_corr <- create_qc_plots(unified_list = unif_mData_corr_vols,
+            plot_qc_vol = "corrected")
 
     }
 
@@ -3083,20 +3089,48 @@ nonparametric_test = "numeric_outlier_test", model_prescision_test = "rmse", plo
 
     }
 
-    #Save the created QC plots
-    for (element in seq_along(qc_plots)) {
+    #Save the created QC plots for the estimated volumes
+    for (element in seq_along(qc_plots_estim)) {
         #Declare dynamic variables
 
         #Initialize a new list which will contain the current list element of the qc_plots list
-        temp_plot_list <- qc_plots[[element]]
+        temp_plot_list <- qc_plots_estim[[element]]
         
         #The outer loop traverses the main plot list
         for (plot in seq_along(temp_plot_list)) {
             #Extract the names of each main plot element (original .csv file name without extension)
-            plot_lst_element_name <- stringr::str_extract(string = names(qc_plots)[element], pattern = "[a-zA-Z_\\-\\\\s0-9]+")
+            plot_lst_element_name <- stringr::str_extract(string = names(qc_plots_estim)[element], pattern = "[a-zA-Z_\\-\\\\s0-9]+")
 
             #Construct the final output file name
-            output_plot_name <-  paste0(qc_plots_dir, "/", plot_lst_element_name, "_", names(temp_plot_list)[plot], ".png")
+            output_plot_name <-  paste0(qc_plots_dir, "/", "estimated", "_", plot_lst_element_name, "_", names(temp_plot_list)[plot], ".png")
+
+            #Set the output device for saving the plots
+            png(filename = output_plot_name, width = 1500, height = 750, units = "px")
+            
+            #Pring the plot to the output device
+            print(temp_plot_list[[plot]])
+
+            #Reset the output device
+            dev.off()
+
+        }
+
+    }
+
+    #Save the created QC plots for the correctedvolumes
+    for (element in seq_along(qc_plots_corr)) {
+        #Declare dynamic variables
+
+        #Initialize a new list which will contain the current list element of the qc_plots list
+        temp_plot_list <- qc_plots_corr[[element]]
+        
+        #The outer loop traverses the main plot list
+        for (plot in seq_along(temp_plot_list)) {
+            #Extract the names of each main plot element (original .csv file name without extension)
+            plot_lst_element_name <- stringr::str_extract(string = names(qc_plots_corr)[element], pattern = "[a-zA-Z_\\-\\\\s0-9]+")
+
+            #Construct the final output file name
+            output_plot_name <-  paste0(qc_plots_dir, "/", "corrected", "_", plot_lst_element_name, "_", names(temp_plot_list)[plot], ".png")
 
             #Set the output device for saving the plots
             png(filename = output_plot_name, width = 1500, height = 750, units = "px")
