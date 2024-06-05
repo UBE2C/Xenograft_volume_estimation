@@ -416,7 +416,7 @@ read_caliper_data = function(data_path, separator, quiet) {
 
 
 
-## This function cleans the uCT data by removing entries without corresponding caliper measurements
+## This function cleans the uCT data by removing entries without any measurements
 clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_samples, quiet) {
     ##Declare function variables
     
@@ -609,9 +609,6 @@ fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list, quiet) {
     #Initialize an output list which will hold the trimmed uCT measurements
     trimmed_uct_list_out <- vector(mode = "list", length = length(clean_uct_data_list))
 
-    #Initialize an output list which will hold the various uCT sampling dates
-    uCT_sampling_dates_out <- vector(mode = "list", length = length(clean_uct_data_list))
-
     #Initialize a final output list
     final_output_list <- vector(mode = "list", length = 2)
     
@@ -642,11 +639,7 @@ fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list, quiet) {
 
         #Initialize a vector onto which the sampling dates will be added (NOTE: the function assumes that the sampling dates between the uCT and caliper measurements are the same!)
         uCT_sampling_dates <- unlist(stringr::str_extract_all(string = colnames(temp_uct_df), pattern = "_[0-9\\.]+"))
-        
-        #Initialize the same dates vector, but as a global variable so it is available to other functions
-        uCT_sampling_dates_out[[index]] <- uCT_sampling_dates
 
-        
         #This inner loop traverses the caliper measurements list
         for (item in seq_along(clean_caliper_data_list)) {
             #This if statement is responsible for matching the current element of the uCT list with the corresponding element of the caliper list
@@ -695,8 +688,6 @@ fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list, quiet) {
     #Add the return lists to the final output list
     final_output_list[[1]] <- trimmed_uct_list_out
     final_output_list[[2]] <- trimmed_caliper_list_out
-
-    assign(x = "uCT_sampling_dates", value = uCT_sampling_dates_out, envir = .GlobalEnv)
 
     ##Return the the fully trimmed data as a list
     return(final_output_list)
@@ -2000,26 +1991,29 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list,
             cli::cli_progress_update()
         }
 
+        #Initialize a vector containing the sampling dates for naming the estimated tumor volumes
+        sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(input_list[[index]]), pattern = "_[0-9\\.]+")))
+
         #Define a vector for the standard deviation bins
         std_bin <- vector(mode = "numeric", length = 11)
 
         #Define a vector containing the standard deviations of 0.5-2 SD below mean
         below_mean_std_vals <- vector(mode = "numeric", length = 11)
         names(below_mean_std_vals) <- as.character(seq(from = 0, to = 5, by = 0.5))
-
+        
         #Define a vector containing the standard deviations of 0.5-2 SD above mean
         above_mean_std_vals <- vector(mode = "numeric", length = 11)
         names(above_mean_std_vals) <- as.character(seq(from = 0, to = 5, by = 0.5))
-
+        
         #Define a vector containing the tumor volume deviation (in percentage) of 0.5-2 SD below mean
-        below_mean_volumes <- data.frame(matrix(nrow = 11, ncol = 2))
+        below_mean_volumes <- data.frame(matrix(nrow = 11, ncol = length(sampling_dates)))
         rownames(below_mean_volumes) <- as.character(seq(from = 0, to = 5, by = 0.5))
-        colnames(below_mean_volumes) <- paste0("vol_deviation", uCT_sampling_dates)
-
+        colnames(below_mean_volumes) <- paste0("vol_deviation", sampling_dates)
+        
         #Define a vector containing the tumor volume deviation (in percentage) of 0.5-2 SD above mean
-        above_mean_volumes <- data.frame(matrix(nrow = 11, ncol = 2))
+        above_mean_volumes <- data.frame(matrix(nrow = 11, ncol = length(sampling_dates)))
         rownames(above_mean_volumes) <- as.character(seq(from = 0, to = 5, by = 0.5))
-        colnames(below_mean_volumes) <- paste0("vol_deviation", uCT_sampling_dates)
+        colnames(below_mean_volumes) <- paste0("vol_deviation", sampling_dates)
 
         #Define a dynamic filter_df
         filter_list <- vector(mode = "list", length = 10)
@@ -2132,14 +2126,14 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list,
         }
 
         #Name the columns of the correction factor dataframe
-        colnames(correction_factors) <- paste0("Corr_factor", uCT_sampling_dates)
+        colnames(correction_factors) <- paste0("Corr_factor", sampling_dates)
 
         #Assign the correction factor dataframes to the correction factor return list
         correction_factor_list[[index]] <- correction_factors
         
 
         #Name the columns of the corrected volumes dataframe
-        colnames(corrected_volumes) <- paste0("Corr_volume", uCT_sampling_dates)
+        colnames(corrected_volumes) <- paste0("Corr_volume", sampling_dates)
 
         #Bind the corrected volumes dataframe to the temp_df
         temp_df <- cbind(temp_df, corrected_volumes)
@@ -2189,6 +2183,9 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
             cli::cli_progress_update()
         }
 
+        #Initialize a vector containing the sampling dates for naming the estimated tumor volumes
+        sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(measurement_list[[index]]), pattern = "_[0-9\\.]+")))
+
         #Initialize a new temporary df containing all the volume columns
         temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
 
@@ -2207,12 +2204,12 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
             comp_table <- data.frame()
 
             #Initialize the dataframe which will hold the calculated p-values
-            ks_lst <- vector(mode = "list", length = length(uCT_sampling_dates)) 
+            ks_lst <- vector(mode = "list", length = length(sampling_dates)) 
 
             #This for loop will traverse the uCT sampling dates
-            for (date in seq_along(uCT_sampling_dates)) {
+            for (date in seq_along(sampling_dates)) {
                 #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
-                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+                comp_table <- temp_comp_df[, grep(pattern = sampling_dates[date], x = colnames(temp_comp_df))]
 
                 #Initialize a variable to hold the uCT measurements
                 uct_volumes <- comp_table[, 1]
@@ -2239,12 +2236,12 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
             comp_table <- data.frame()
 
             #Initialize the dataframe which will hold the calculated p-values
-            ks_lst <- vector(mode = "list", length = length(uCT_sampling_dates)) 
+            ks_lst <- vector(mode = "list", length = length(sampling_dates)) 
 
             #This for loop will traverse the uCT sampling dates
-            for (date in seq_along(uCT_sampling_dates)) {
+            for (date in seq_along(sampling_dates)) {
                 #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
-                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+                comp_table <- temp_comp_df[, grep(pattern = sampling_dates[date], x = colnames(temp_comp_df))]
 
                 #Initialize a variable to hold the uCT measurements
                 uct_volumes <- comp_table[, 1]
@@ -2260,7 +2257,7 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
         }
 
         #Assign the appropriate colnames to the p-value columns
-        names(ks_lst) <- paste0("ks_test_results", uCT_sampling_dates)
+        names(ks_lst) <- paste0("ks_test_results", sampling_dates)
 
         #Assign the p-value containing dataframes to the output list
         ks_result_out_list[[index]] <- ks_lst
@@ -2301,6 +2298,9 @@ pearson_test = function(measurement_list, correction = TRUE, quiet) {
             cli::cli_progress_update()
         }
 
+        #Initialize a vector containing the sampling dates for naming the estimated tumor volumes
+        sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(measurement_list[[index]]), pattern = "_[0-9\\.]+")))
+
         #Initialize a new temporary df containing all the volume columns
         temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
 
@@ -2319,12 +2319,12 @@ pearson_test = function(measurement_list, correction = TRUE, quiet) {
             comp_table <- data.frame()
 
             #Initialize the dataframe which will hold the calculated r-values
-            pearson_corr <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+            pearson_corr <- data.frame(matrix(nrow = 1, ncol = length(sampling_dates)))
 
             #This for loop will traverse the uCT sampling dates
-            for (date in seq_along(uCT_sampling_dates)) {
+            for (date in seq_along(sampling_dates)) {
                 #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
-                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+                comp_table <- temp_comp_df[, grep(pattern = sampling_dates[date], x = colnames(temp_comp_df))]
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 pearson_corr[, date] <- cor(x = comp_table[, 1], y = comp_table[, 2], method = "pearson")
@@ -2345,12 +2345,12 @@ pearson_test = function(measurement_list, correction = TRUE, quiet) {
             comp_table <- data.frame()
 
             #Initialize the dataframe which will hold the calculated r-values
-            pearson_corr <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+            pearson_corr <- data.frame(matrix(nrow = 1, ncol = length(sampling_dates)))
 
             #This for loop will traverse the uCT sampling dates
-            for (date in seq_along(uCT_sampling_dates)) {
+            for (date in seq_along(sampling_dates)) {
                 #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
-                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+                comp_table <- temp_comp_df[, grep(pattern = sampling_dates[date], x = colnames(temp_comp_df))]
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 pearson_corr[, date] <- cor(x = comp_table[, 1], y = comp_table[, 2], method = "pearson")
@@ -2359,7 +2359,7 @@ pearson_test = function(measurement_list, correction = TRUE, quiet) {
         }
 
         #Assign the appropriate colnames to the p-value columns
-        colnames(pearson_corr) <- paste0("pearson_coeff", uCT_sampling_dates)
+        colnames(pearson_corr) <- paste0("pearson_coeff", sampling_dates)
 
         #Assign the p-value containing dataframes to the output list
         r_val_out_list[[index]] <- pearson_corr
@@ -2400,6 +2400,9 @@ mae_test = function(measurement_list, correction = TRUE, quiet) {
             cli::cli_progress_update()
         }
 
+        #Initialize a vector containing the sampling dates for naming the estimated tumor volumes
+        sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(measurement_list[[index]]), pattern = "_[0-9\\.]+")))
+
         #Initialize a new temporary df containing all the volume columns
         temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
 
@@ -2418,12 +2421,12 @@ mae_test = function(measurement_list, correction = TRUE, quiet) {
             comp_table <- data.frame()
 
             #Initialize the dataframe which will hold the calculated r-values
-            mae_values <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+            mae_values <- data.frame(matrix(nrow = 1, ncol = length(sampling_dates)))
 
             #This for loop will traverse the uCT sampling dates
-            for (date in seq_along(uCT_sampling_dates)) {
+            for (date in seq_along(sampling_dates)) {
                 #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
-                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+                comp_table <- temp_comp_df[, grep(pattern = sampling_dates[date], x = colnames(temp_comp_df))]
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 mae_values[, date] <- mean(abs(comp_table[, 1] - comp_table[, 2]), na.rm = TRUE)
@@ -2444,12 +2447,12 @@ mae_test = function(measurement_list, correction = TRUE, quiet) {
             comp_table <- data.frame()
 
             #Initialize the dataframe which will hold the calculated r-values
-            mae_values <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+            mae_values <- data.frame(matrix(nrow = 1, ncol = length(sampling_dates)))
 
             #This for loop will traverse the uCT sampling dates
-            for (date in seq_along(uCT_sampling_dates)) {
+            for (date in seq_along(sampling_dates)) {
                 #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
-                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+                comp_table <- temp_comp_df[, grep(pattern = sampling_dates[date], x = colnames(temp_comp_df))]
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 mae_values[, date] <- mean(abs(comp_table[, 1] - comp_table[, 2]), na.rm = TRUE)
@@ -2458,7 +2461,7 @@ mae_test = function(measurement_list, correction = TRUE, quiet) {
         }
 
         #Assign the appropriate colnames to the p-value columns
-        colnames(mae_values) <- paste0("mae", uCT_sampling_dates)
+        colnames(mae_values) <- paste0("mae", sampling_dates)
 
         #Assign the p-value containing dataframes to the output list
         mae_val_out_list[[index]] <- mae_values
@@ -2499,6 +2502,9 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
             cli::cli_progress_update()
         }
 
+        #Initialize a vector containing the sampling dates for naming the estimated tumor volumes
+        sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(measurement_list[[index]]), pattern = "_[0-9\\.]+")))
+
         #Initialize a new temporary df containing all the volume columns
         temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
 
@@ -2517,12 +2523,12 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
             comp_table <- data.frame()
 
             #Initialize the dataframe which will hold the calculated r-values
-            rmse_values <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+            rmse_values <- data.frame(matrix(nrow = 1, ncol = length(sampling_dates)))
 
             #This for loop will traverse the uCT sampling dates
-            for (date in seq_along(uCT_sampling_dates)) {
+            for (date in seq_along(sampling_dates)) {
                 #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
-                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+                comp_table <- temp_comp_df[, grep(pattern = sampling_dates[date], x = colnames(temp_comp_df))]
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 rmse_values[, date] <- sqrt(mean((comp_table[, 1] - comp_table[, 2]) ^ 2, na.rm = TRUE))
@@ -2543,12 +2549,12 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
             comp_table <- data.frame()
 
             #Initialize the dataframe which will hold the calculated r-values
-            rmse_values <- data.frame(matrix(nrow = 1, ncol = length(uCT_sampling_dates)))
+            rmse_values <- data.frame(matrix(nrow = 1, ncol = length(sampling_dates)))
 
             #This for loop will traverse the uCT sampling dates
-            for (date in seq_along(uCT_sampling_dates)) {
+            for (date in seq_along(sampling_dates)) {
                 #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
-                comp_table <- temp_comp_df[, grep(pattern = uCT_sampling_dates[date], x = colnames(temp_comp_df))]
+                comp_table <- temp_comp_df[, grep(pattern = sampling_dates[date], x = colnames(temp_comp_df))]
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 rmse_values[, date] <- sqrt(mean((comp_table[, 1] - comp_table[, 2]) ^ 2, na.rm = TRUE))
@@ -2557,7 +2563,7 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
         }
 
         #Assign the appropriate colnames to the p-value columns
-        colnames(rmse_values) <- paste0("rmse", uCT_sampling_dates)
+        colnames(rmse_values) <- paste0("rmse", sampling_dates)
 
         #Assign the p-value containing dataframes to the output list
         rmse_val_out_list[[index]] <- rmse_values
@@ -3136,11 +3142,9 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
         quiet = silent)
 
 
-    ##Fit the clean datasets and bind the uCT date speficic measurements togeather
+    ##Fit the clean datasets and bind the uCT date specific measurements together
 
     #Fit the clean caliper measurements to match the uCT measurements and vice versa
-    #NOTE:this function also returns a uCT_sampling_dates global variable
-    #for later use by other functions
     fitted_measurement_data <- fit_clean_data(clean_uct_data_list = clean_measurement_data[[1]],
         clean_caliper_data_list = clean_measurement_data[[2]],
         quiet = silent)
