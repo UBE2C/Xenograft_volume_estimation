@@ -5,7 +5,7 @@
 #########################################
 #                                       #
 #               XenoVol                 #
-#      Xenograft volume estimation      #
+#      Xenograft Volume estimation      #
 #           Version 1.0.0               #
 #          by Gábor Bakos               #
 #                                       #

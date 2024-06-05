@@ -5,7 +5,7 @@
 #########################################
 #                                       #
 #            SynthXenoGen               #
-#  Synthetic Xenograft data generation  #
+#  Synthetic Xenograft data Generation  #
 #           Version 1.0.0               #
 #           by Gábor Bakos              #
 #                                       #
