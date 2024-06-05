@@ -4,9 +4,10 @@
 
 #########################################
 #                                       #
-#   Tumor measurement data processing   #
-#       Synthetic data generation       #
-#         by Gabor Bakos (UBE2C)        #
+#            SynthXenoGen               #
+#  Synthetic Xenograft data generation  #
+#           Version 1.0.0               #
+#           by Gábor Bakos              #
 #                                       #
 #########################################
 

@@ -4,9 +4,10 @@
 
 #########################################
 #                                       #
-#   Tumor measurement data processing   #
-#         Volume calculation            #
-#       by Gabor Bakos (UBE2C)          #
+#               XenoVol                 #
+#      Xenograft volume estimation      #
+#           Version 1.0.0               #
+#          by Gábor Bakos               #
 #                                       #
 #########################################
 
@@ -274,10 +275,12 @@ options_list <- list(
 )
 
 # Create a program description
-prog_descr <- c(paste0("\nXenoVol (Xenograft Volume estimator) is a CLI (Command Line Interface) tool, created to help estimate tumor xenograft volumes
-using the f-constant formula described by Feldman JP el al. (2010) and by Sápi et al. (2015). The main intention for this tool is to automate the calculation process for 
-the volume calculation especially in the case of tumors where the height measurements are difficult or impossible to obtain, however reference
-µCT measurements are available (such as xenografts growing on the flank).
+prog_descr <- c(paste0("\nXenoVol (Xenograft Volume Estimator) is a versatile CLI (Command Line Interface) tool designed to streamline the estimation of tumor xenograft volumes.
+It implements the f-constant formula established by Feldman JP et al. (2010) and expanded upon by Sápi et al. (2015).
+
+The primary purpose of XenoVol is to automate volume calculations, particularly for tumors where obtaining accurate height measurements is challenging or impractical,
+such as for xenografts growing on the flank region. Instead, it relies on reference µCT measurements obtained throughout the experiments.
+To execute the tool, use the syntax:
 'Rscript XenoVol_v[option] [optional args]'. \n",
 "Author: Gábor Bakos (UBE2C @ GitHub)"))
 
