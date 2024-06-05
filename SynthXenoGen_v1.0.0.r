@@ -128,6 +128,14 @@ options_list <- list(
     help = "This argument controls if the model should be based on exponential or logistical growth rates. To choose between the growth models type either 'exponential' or 'logistical'.
     By default the growth model is set to 'exponential'."),
 
+    optparse::make_option(opt_str = c("--tumor_shape"), action = "store", type = "character", default = "ellipsoid",
+    help = "This argument controls if the model should assume an 'ellipsoid' or 'hemi-ellipsoid tumor shape'. This will affect the calculation method as different formulas
+    are used for the different shapes [Sápi et al. 2015].
+    Formulas: ellipsoid - (4 / 3) * pi * (sample$L[ind] / 2) * (sample$W[ind] / 2) * (sample$H[ind] / 2)
+              hemi-ellipsoid -  pi * (sample$L[ind] / 2) * (sample$W[ind] / 2) * (sample$H[ind] / 2)
+    To choose between the shapes type either 'ellipsoid' or 'hemi-ellipsoid'.
+    By default the growth model is set to 'ellipsoid'."),
+
     optparse::make_option(opt_str = c("--carrying_capacity"), action = "store", type = "integer", default = 15,
     help = "This argument takes an integer which defines the carrying capacity (a constant which limits tumor volume growth) for the logistical growth model.
     By default the initial carrying capacity is set to 15."),
@@ -287,7 +295,7 @@ create_dates = function(no_of_days, start_date, by_days) {
 ## This is the main subfunction responsible for creating synthetic tumor volume measurements. The function is supposed to model the growth of
 ## subcutaneously injected xenograft tumors under various condition (control vs treatment)
 ## NOTE: the function returns a list with two dataframes
-tumor_data_generator = function(number_of_measurements, number_of_samples, growth_model, carrying_capacity, base_intrinsic_growth_rate,
+tumor_data_generator = function(number_of_measurements, number_of_samples, growth_model, vol_calc, carrying_capacity, base_intrinsic_growth_rate,
     request_dates, dates, seed, initial_element_mean, initial_element_sd, growth_variation_min, growth_variation_max, treatment_administered, treatment_effect_start, 
     treatment_variation_min, treatment_variation_max, continuous_treatment) {
     
@@ -470,7 +478,13 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
 
             #Calculate the volume of every sample in a measurement and add them to the volume variable (each element is a tumor volume for a given date/measurement)
             for (ind in seq_len(nMeasurements)) {
-                volume[ind] <- (4 / 3) * pi * (sample$L[ind] / 2) * (sample$W[ind] / 2) * (sample$H[ind] / 2)
+                if (vol_calc == "ellipsoid") {
+                    volume[ind] <- (4 / 3) * pi * (sample$L[ind] / 2) * (sample$W[ind] / 2) * (sample$H[ind] / 2)
+
+                } else if (vol_calc == "hemi-ellipsoid") {
+                    volume[ind] <- pi * (sample$L[ind] / 2) * (sample$W[ind] / 2) * (sample$H[ind] / 2)
+                }
+                
                 LxW_value[ind] <- (sample$L[ind]) * (sample$W[ind])
                 L_values[ind] <- sample$L[ind]
                 W_values[ind] <- sample$W[ind]
@@ -580,7 +594,13 @@ tumor_data_generator = function(number_of_measurements, number_of_samples, growt
 
             #Calculate the volume of every sample in a measurement and add them to the volume variable (each element is a tumor volume for a given date/measurement)
             for (ind in seq_len(nMeasurements)) {
-                volume[ind] <- (4 / 3) * pi * (sample$L[ind] / 2) * (sample$W[ind] / 2) * (sample$H[ind] / 2)
+                if (vol_calc == "ellipsoid") {
+                    volume[ind] <- (4 / 3) * pi * (sample$L[ind] / 2) * (sample$W[ind] / 2) * (sample$H[ind] / 2)
+
+                } else if (vol_calc == "hemi-ellipsoid") {
+                    volume[ind] <- pi * (sample$L[ind] / 2) * (sample$W[ind] / 2) * (sample$H[ind] / 2)
+                }
+                
                 LxW_value[ind] <- (sample$L[ind]) * (sample$W[ind])
                 L_values[ind] <- sample$L[ind]
                 W_values[ind] <- sample$W[ind]
@@ -860,7 +880,7 @@ plot_tumor_volumes = function(data, number_of_measurements, number_of_samples, d
 
 
 ##The main function integrating all of the subfunctions
-main = function(measurements = arguments$number_of_measurements, samples = arguments$number_of_samples, model = arguments$growth_model, carry_cap = arguments$carrying_capacity, 
+main = function(measurements = arguments$number_of_measurements, samples = arguments$number_of_samples, model = arguments$growth_model, shape = arguments$tumor_shape, carry_cap = arguments$carrying_capacity, 
     base_intr_growth_rate = arguments$base_intrinsic_growth_rate, rdates = arguments$dates, sdate = arguments$start_date, bydays = arguments$by_days, set_seed = arguments$seed,
     init_element_mean = arguments$initial_element_mean, init_element_sd = arguments$initial_element_sd, gr_variation_min = arguments$growth_variation_min, gr_variation_max = arguments$growth_variation_max,
     treatment = arguments$treatment, treatment_start = arguments$treatment_start, tr_variation_min = arguments$treatment_variation_min, tr_variation_max = arguments$treatment_variation_max,
@@ -876,7 +896,7 @@ main = function(measurements = arguments$number_of_measurements, samples = argum
         ##Call the tumor_data-generator subfunction
         message("Generating synthetic data... \n")
         
-        Synthetic_data <- tumor_data_generator(number_of_measurements = measurements, number_of_samples = samples, growth_model = model, carrying_capacity = carry_cap,
+        Synthetic_data <- tumor_data_generator(number_of_measurements = measurements, number_of_samples = samples, growth_model = model, vol_calc = shape, carrying_capacity = carry_cap,
             base_intrinsic_growth_rate = base_intr_growth_rate, request_dates = rdates, dates = Dates, seed = set_seed, initial_element_mean = init_element_mean,
             initial_element_sd = init_element_sd, growth_variation_min = gr_variation_min, growth_variation_max = gr_variation_max, treatment_administered = treatment,
             treatment_effect_start = treatment_start, treatment_variation_min = tr_variation_min, treatment_variation_max = tr_variation_max, continuous_treatment = cont_treatment)
