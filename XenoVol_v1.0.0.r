@@ -266,10 +266,10 @@ options_list <- list(
 
     optparse::make_option(opt_str = c("-m", "--final_correction_method"), action = "store", type = "character", default = "mean_correction",
     help = "This argument takes a character string as input which controls how the final tumor volumes should be corrected.
-            The options are 'mean_correction' to perform a correction based on the mean correction factor values, or 'linear_correction' to perform a correction
+            The options are 'mean_correction' to perform a correction based on the mean correction factor values, or 'linear_interpolation' to perform a correction
             based on an equal growth distribution calculated between the initial and final uCT measurements.
-            NOTE: the 'mean_correction' method is more robust and can be utilized even if there are NA values in the reference uCT data,
-            while this is not true for the 'linear_correction'.
+            NOTE: the 'mean_correction' method is more robust and can be utilized even if there are sporadic NA values in the reference uCT data,
+            while this is not true for the 'linear_interpolation'.
             By default the option is set to 'mean_correction'.")
 
 )
@@ -2597,7 +2597,7 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
 
 
 ## Calculate the correction factor matrix for the pure caliper measurements data
-calculate_correction_matrixes = function(correction_factor_lst, corr_method, number_of_measurements, quiet) {
+calculate_correction_matrixes = function(correction_factor_lst, uct_input, corr_method, number_of_measurements, quiet) {
     ##Define function variables
 
     #Initialize the output list
@@ -2609,7 +2609,7 @@ calculate_correction_matrixes = function(correction_factor_lst, corr_method, num
 
     ##Start the calculations
 
-    if (corr_method == "linear_correction") {
+    if (corr_method == "linear_interpolation") {
         #This for loop traverses the input list and splits off the input list elements (data frames)
         for (index in seq_along(correction_factor_lst)) {
             ##Define the dynamic function variables
@@ -2619,16 +2619,38 @@ calculate_correction_matrixes = function(correction_factor_lst, corr_method, num
                 cli::cli_progress_update()
             }
 
+            #Initialize a vector containing the sampling dates for naming the estimated tumor volumes
+            sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(correction_factor_lst[[index]]), pattern = "_[0-9\\.]+")))
+
             #Initialize the current list element dataframe
             temp_corr_df <- correction_factor_lst[[index]]
 
             #Initialize the correction factor matrix
             corr_factor_matrix <- data.frame(matrix(nrow = nrow(temp_corr_df), ncol = number_of_measurements))
 
-            #Calculate the linear correction values across the measurements based on the early and late correction factors
-            for (r in seq_len(nrow(temp_corr_df))) {
-                corr_factor_matrix[r, ] <- seq(from = temp_corr_df[r, 1], to = temp_corr_df[r, 2], by = (temp_corr_df[r, 2] - temp_corr_df[r, 1]) / (number_of_measurements - 1))
-                
+            #Initialize a vector containing the uct_data column indexes
+            real_col_index <- vector(mode = "numeric", length = ncol(temp_corr_df))
+
+            #Store the uct_data column indexes
+            for (i in seq_len(ncol(temp_corr_df))) {
+                real_col_index[i] <- grep(pattern = sampling_dates[i], x = colnames(uct_input[[index]]))
+            }
+
+            #Insert the known correction factors to the appropriate position of the correction matrix for the linear interpolation
+            corr_factor_matrix[, real_col_index - 3] <- temp_corr_df
+
+
+            ##Build the correction matrix using linear interpolation
+
+            #Initialize the columns (measurement dates) containing NAs which needs to be interpolated
+            columns_to_interpolate <- seq_len(ncol(corr_factor_matrix))[unique(is.na.data.frame(corr_factor_matrix))]
+
+            #Run the interpolation using the approx function
+            for (i in seq_len(nrow(corr_factor_matrix))) {
+            
+            # Perform interpolation and assign the y (interpolated values) to the proper column positions (columns_to_interpolate is equal to $x)
+            corr_factor_matrix[i, columns_to_interpolate] <- approx(as.numeric(corr_factor_matrix[i, ]), xout = columns_to_interpolate, method = "linear", rule = 2)$y
+            
             }
 
             #Assign the correction matrix to the output list
@@ -2661,6 +2683,10 @@ calculate_correction_matrixes = function(correction_factor_lst, corr_method, num
 
         }
 
+    } else {
+        #Throw an error and stop execution
+        stop("The given correction method is invalid. Only 'mean_correction' and 'linear_interpolation' are accepted.")
+        
     }
     
     
@@ -2765,7 +2791,7 @@ correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
     #Initialize a progress bar variable will allow to visualize a progression bar
     cli::cli_progress_bar(name = "Correct total tumor volumes", total = length(final_tumor_volume_lst), type = "iterator", clear = FALSE)
 
-    if (corr_method == "linear_correction") {
+    if (corr_method == "linear_interpolation") {
     ##Start the correction
 
         #This loop traverses the input list and splits off list elements (dataframes) for processing
@@ -2868,6 +2894,10 @@ correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
         ##Return the output list
         return(output_list)
 
+    } else {
+        #Throw an error and stop execution
+        stop("The given correction method is invalid. Only 'mean_correction' and 'linear_interpolation' are accepted.")
+        
     }
        
 }
@@ -3390,7 +3420,7 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
             #Set the output device for saving the plots
             png(filename = output_plot_name, width = 1500, height = 750, units = "px")
             
-            #Pring the plot to the output device
+            #Print the plot to the output device
             print(temp_plot_list[[plot]])
 
             #Reset the output device
@@ -3403,7 +3433,7 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
     #Initialize a progress bar variable will allow to visualize a progression bar
     cli::cli_progress_bar(name = "Saving corrVol plots", total = length(qc_plots_corr), type = "iterator", clear = FALSE)
 
-    #Save the created QC plots for the correctedvolumes
+    #Save the created QC plots for the corrected volumes
     for (element in seq_along(qc_plots_corr)) {
         #Declare dynamic variables
 
@@ -3479,12 +3509,13 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
     }
 
 
-    ##Calculate correction matixes or vectors for the final total volume corrextions
+    ##Calculate correction matrixes or vectors for the final total volume corrections
     if (volume_corr == TRUE && rm_na_samples == TRUE) {
-        #NOTE: in this case the correction method can be both 'linear_correction' or 'mean_correction' and the correction_matrix
+        #NOTE: in this case the correction method can be both 'linear_interpolation' or 'mean_correction' and the correction_matrix
         #can represent both a list of matrixes or vectors
         correction_matrix_list <- calculate_correction_matrixes(correction_factor_lst = correction_factor_list,
             corr_method = correction_method,
+            uct_input = uct_data,
             number_of_measurements = n_calip_measurements,
             quiet = silent)
 
@@ -3497,6 +3528,7 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
         #NOTE: in this case the correction method can only be 'mean_correction' and the correction_matrix
         # is named differently to signify that it represents a list of vectors
         correction_vector_list <- calculate_correction_matrixes(correction_factor_lst = correction_factor_list,
+            uct_input = uct_data,
             corr_method = "mean_correction",
             number_of_measurements = n_calip_measurements,
             quiet = silent)
@@ -3511,9 +3543,9 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
         quiet = silent)
 
     
-    ##Correct the total tumor volumes using the previously calclated correction matrix/vector
+    ##Correct the total tumor volumes using the previously calculated correction matrix/vector
     if (volume_corr == TRUE && rm_na_samples == TRUE) {
-        #NOTE: in this case the correction method can be both 'linear_correction' or 'mean_correction' and the correction_matrix
+        #NOTE: in this case the correction method can be both 'linear_interpolation' or 'mean_correction' and the correction_matrix
         #can represent both a list of matrixes or vectors
         corr_total_volumes <- correct_total_tumor_volumes(final_tumor_volume_lst = estim_total_volumes,
             correction_matrix_lst = correction_matrix_list,
