@@ -240,6 +240,7 @@ options_list <- list(
     help = "This argument takes a boolean as input to determine if sporadic NA containing samples should be removed during the volume estimation.
             Please note that the columns, (measurement dates) containing only NAs will still be removed, regardless of this option as it controls only the
             handling of sporadic NAs in samples (rows).
+            Additionally, if this option is FALSE, the 'final_correction_method' will default to 'mean_correction' regardless of choice!
             By default the option is set to FALSE"),
 
     optparse::make_option(opt_str = c("--outlier_handling"), action = "store", type = "character", default = "detect",
