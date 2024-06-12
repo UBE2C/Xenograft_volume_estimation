@@ -181,31 +181,6 @@ dir_management = function(input_1 = NULL, input_2 = NULL) {
 
 
 
-
-################################################# MARK: call the Dir_management function #################################################
-                                                #        and set global options          #
-
-
-
-
-## Calling the directory management function 
-## NOTE: tis function must be called before the option parsing and main function, so it can properly assign and modify the input and output directories
-## before the options parsing happens!
-dir_management()
-
-
-
-## Set a global option for a CLI progress bar
-options(cli.progress_show_after = 0.5)
-
-
-#################################################               Section end             #################################################
-
-
-
-
-
-
 ################################################# MARK: CLI arguments #################################################
                                                 #                     #
 
@@ -223,11 +198,11 @@ options_list <- list(
             By default the script sets the local directory as path.
             NOTE: Please note that additional output directories will be created for better file organization."),
 
-    optparse::make_option(opt_str = c("-v", "--verbose"), action = "store_true", default = FALSE, dest = "verbose",
+    optparse::make_option(opt_str = c("-v", "--verbose"), action = "store", type = "logical", default = FALSE, dest = "verbose",
     help = "This argument takes a boolean as input and it controls if the program returns additional information like various messages and warnings.
             By default the option is set to FALSE."),
 
-    optparse::make_option(opt_str = c("--quiet"), action = "store_true", default = TRUE, dest = "quiet",
+    optparse::make_option(opt_str = c("--quiet"), action = "store", type = "logical", default = TRUE, dest = "quiet",
     help = "This argument takes a boolean as input and it controls if the program returns progress bars for the internal steps.
             NOTE: only tasks longer than 1 second will produce a progress bat, shorter tasks will always run quietly.
             By default the option is set to TRUE."),
@@ -236,7 +211,7 @@ options_list <- list(
     help = "This argument takes a character as input which defines the separator used in the input .csv files.
             By default the script sets the separator to a semicolon ';'."),
 
-    optparse::make_option(opt_str = c("--remove_na_samples"), action = "store_true", default = FALSE, dest = "rm_na_samples",
+    optparse::make_option(opt_str = c("--remove_na_samples"), action = "store", type = "logical", default = FALSE, dest = "rm_na_samples",
     help = "This argument takes a boolean as input to determine if sporadic NA containing samples should be removed during the volume estimation.
             Please note that the columns, (measurement dates) containing only NAs will still be removed, regardless of this option as it controls only the
             handling of sporadic NAs in samples (rows).
@@ -256,12 +231,12 @@ options_list <- list(
             NOTE: the modified Z-score test is a non-standard approach and should be approached with care.
             By default the option is set to 'numeric_outlier_test'."),
 
-    optparse::make_option(opt_str = c("-p", "--precision_test"), action = "store", type = "character", default = "rsme",
+    optparse::make_option(opt_str = c("-p", "--precision_test"), action = "store", type = "character", default = "rmse",
     help = "This argument takes a character string as input which controls how the model prediction error should be calculated. The resulting errors can be used
-            to evaluate prediction precision. The options are 'rsme' to perform a Root Mean Squared Error test, or 'mae' to perform a Median Absolute Error test.
-            By default the option is set to 'rsme'."),
+            to evaluate prediction precision. The options are 'rmse' to perform a Root Mean Squared Error test, or 'mae' to perform a Median Absolute Error test.
+            By default the option is set to 'rmse'."),
 
-    optparse::make_option(opt_str = c("-c", "--final_volume_correction"), action = "store_true", default = TRUE, dest = "volume_correction",
+    optparse::make_option(opt_str = c("-c", "--final_volume_correction"), action = "store", type = "logical", default = TRUE, dest = "volume_correction",
     help = "This argument takes a boolean as input to determine if the estimated final volumes should be corrected.
             By default the option is set to TRUE"),
 
@@ -292,6 +267,29 @@ arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = 
                                     print_help_and_exit = TRUE,
                                     positional_arguments = FALSE,
                                     convert_hyphens_to_underscores = FALSE)
+
+
+#################################################               Section end             #################################################
+
+
+
+
+
+################################################# MARK: call the Dir_management function #################################################
+                                                #        and set global options          #
+
+
+
+
+## Calling the directory management function 
+## NOTE: tis function must be called before the option parsing and main function, so it can properly assign and modify the input and output directories
+## before the options parsing happens!
+dir_management()
+
+
+
+## Set a global option for a CLI progress bar
+options(cli.progress_show_after = 0.5)
 
 
 #################################################               Section end             #################################################
@@ -3676,7 +3674,7 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
             quiet = silent)
 
         #Initialize a progress bar variable will allow to visualize a progression bar
-        cli::cli_progress_bar(name = "Saving growth curve plots", total = length(corrected_vol_plots), type = "iterator", clear = FALSE)
+        cli::cli_progress_bar(name = "Saving growth curve plots", total = length(estimated_vol_plots), type = "iterator", clear = FALSE)
 
         #Save the projected estimated tumor volumes
         for (element in seq_along(estimated_vol_plots)) {
