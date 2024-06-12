@@ -246,7 +246,12 @@ options_list <- list(
             based on an equal growth distribution calculated between the initial and final uCT measurements.
             NOTE: the 'mean_correction' method is more robust and can be utilized even if there are sporadic NA values in the reference uCT data,
             while this is not true for the 'linear_interpolation'.
-            By default the option is set to 'mean_correction'.")
+            By default the option is set to 'mean_correction'."),
+
+    optparse::make_option(opt_str = c("--plot_theme"), action = "store", type = "character", default = "light",
+    help = "This argument takes a character string as input which controls the theme of the generated plots.
+            The options are 'light' to generate the standard white plots with black text, or 'dark' to generate black plots with white text.
+            By default the option is set to 'light'.")
 
 )
 
@@ -2915,7 +2920,7 @@ correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
 
 
 ## QC plotting - plot the estimated and corrected volumes against the measured volumes
-create_qc_plots = function(unified_list, plot_qc_vol, quiet) {
+create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
     ##Define static function variables
 
     #Initialize the output plot list
@@ -2961,11 +2966,15 @@ create_qc_plots = function(unified_list, plot_qc_vol, quiet) {
             #Plot the comparison data of each sampling date
             plot_list <- vector(mode = "list", length = length(dates))
             for (date in seq_along(dates)) {
-
+                #Initialize a new variable to contain the dataframes transformed for lotting
                 plot_df <- plot_df_corr[, c(1, grep(pattern = dates[date], x = colnames(plot_df_corr), ignore.case = TRUE))]
+
+                #Name the x and y corresponding columns for ggplot
                 colnames(plot_df)[2:3] <- c("uct", "corr")
                 
-                plot <- suppressMessages(ggplot2::ggplot(data = plot_df,
+                if (theme == "light") { 
+                    #Plot the dataframe
+                    plot <- suppressMessages(ggplot2::ggplot(data = plot_df,
                         mapping = aes(x = uct, y = corr,  color = Mouse_ID)) +
                         ggsci::scale_color_futurama() +
                         ggplot2::geom_point() +
@@ -2976,11 +2985,41 @@ create_qc_plots = function(unified_list, plot_qc_vol, quiet) {
                         ggplot2::theme_classic() +
                         ggplot2::theme(plot.title = element_text(hjust = 0.5)))
 
+                } else if (theme == "dark") {
+                    #Plot the dataframe
+                    plot <- suppressMessages(ggplot2::ggplot(data = plot_df,
+                        mapping = aes(x = uct, y = corr,  color = Mouse_ID)) +
+                        ggsci::scale_color_futurama() +
+                        ggplot2::geom_point() +
+                        ggplot2::stat_smooth(method = "lm", formula = y ~ x, col = "red", alpha = 0.3, linewidth = 0.5) +
+                        ggplot2::ggtitle(paste0(names(unified_list)[[index]], "_", plot_names[date])) +
+                        ggplot2::labs(x = expression("uCT volumes mm"^3), y = expression("Corrected volumes mm"^3),
+                                color = expression("Mouse IDs")) +
+                        ggplot2::theme_classic() +
+                        ggplot2::theme(
+                            plot.background = element_rect(fill = "black", color = NA),
+                            panel.background = element_rect(fill = "black", color = NA),
+                            axis.title = element_text(color = "white"),
+                            axis.text = element_text(color = "white"),
+                            axis.line = element_line(color = "white"),
+                            axis.ticks = element_line(color = "white"),
+                            plot.title = element_text(color = "white", hjust = 0.5),
+                            legend.background = element_rect(fill = "black"),
+                            legend.key = element_rect(fill = "black", color = "black"),
+                            legend.text = element_text(color = "white"),
+                            legend.title = element_text(color = "white")))
+
+                }
+
+                #Assign the plot to the plot list
                 plot_list[[date]] <- plot
+
             }
 
+            #Name the elements of the plot list base don the plot names
             names(plot_list) <- plot_names
 
+            #Assign the plot list to the output plot list
             output_plots_list[[index]] <- plot_list
 
         } else if (plot_qc_vol == "estimated") {
@@ -3001,7 +3040,7 @@ create_qc_plots = function(unified_list, plot_qc_vol, quiet) {
             #Initialize a new variable which will contain each individual plots for each dataframe
             plot_list <- vector(mode = "list", length = length(dates))
 
-            #This for loop will traverse the unique sampling dates to plot each date separatley (due to volume differences)
+            #This for loop will traverse the unique sampling dates to plot each date separately (due to volume differences)
             for (date in seq_along(dates)) {
             
                 #Initialize a new variable to contain the dataframes transformed for lotting
@@ -3010,17 +3049,45 @@ create_qc_plots = function(unified_list, plot_qc_vol, quiet) {
                 #Name the x and y corresponding columns for ggplot
                 colnames(plot_df)[2:3] <- c("uct", "estim")
                 
-                #Plot the dataframe
-                plot <- suppressMessages(ggplot2::ggplot(data = plot_df,
-                        mapping = aes(x = uct, y = estim,  color = Mouse_ID)) +
-                        ggsci::scale_color_futurama() +
-                        ggplot2::geom_point() +
-                        ggplot2::stat_smooth(method = "lm", formula = y ~ x, col = "red", alpha = 0.1, linewidth = 0.5) +
-                        ggplot2::ggtitle(paste0(names(unified_list)[[index]], "_", plot_names[date])) +
-                        ggplot2::labs(x = expression("uCT volumes mm"^3), y = expression("Estimated volumes mm"^3),
-                                color = expression("Mouse IDs")) +
-                        ggplot2::theme_classic() +
-                        ggplot2::theme(plot.title = element_text(hjust = 0.5)))
+                if (theme == "light") {
+                    #Plot the dataframe
+                    plot <- suppressMessages(ggplot2::ggplot(data = plot_df,
+                            mapping = aes(x = uct, y = estim,  color = Mouse_ID)) +
+                            ggsci::scale_color_futurama() +
+                            ggplot2::geom_point() +
+                            ggplot2::stat_smooth(method = "lm", formula = y ~ x, col = "red", alpha = 0.1, linewidth = 0.5) +
+                            ggplot2::ggtitle(paste0(names(unified_list)[[index]], "_", plot_names[date])) +
+                            ggplot2::labs(x = expression("uCT volumes mm"^3), y = expression("Estimated volumes mm"^3),
+                                    color = expression("Mouse IDs")) +
+                            ggplot2::theme_classic() +
+                            ggplot2::theme(plot.title = element_text(hjust = 0.5)))
+
+                } else if (theme == "dark") {
+                    #Plot the dataframe
+                    plot <- suppressMessages(ggplot2::ggplot(data = plot_df,
+                            mapping = aes(x = uct, y = estim,  color = Mouse_ID)) +
+                            ggsci::scale_color_futurama() +
+                            ggplot2::geom_point() +
+                            ggplot2::stat_smooth(method = "lm", formula = y ~ x, col = "red", alpha = 0.3, linewidth = 0.5) +
+                            ggplot2::ggtitle(paste0(names(unified_list)[[index]], "_", plot_names[date])) +
+                            ggplot2::labs(x = expression("uCT volumes mm"^3), y = expression("Estimated volumes mm"^3),
+                                    color = expression("Mouse IDs")) +
+                            ggplot2::theme_classic() +
+                            ggplot2::theme(
+                            plot.background = element_rect(fill = "black", color = NA),
+                            panel.background = element_rect(fill = "black", color = NA),
+                            axis.title = element_text(color = "white"),
+                            axis.text = element_text(color = "white"),
+                            axis.line = element_line(color = "white"),
+                            axis.ticks = element_line(color = "white"),
+                            plot.title = element_text(color = "white", hjust = 0.5),
+                            legend.background = element_rect(fill = "black"),
+                            legend.key = element_rect(fill = "black", color = "black"),
+                            legend.text = element_text(color = "white"),
+                            legend.title = element_text(color = "white")))
+
+                }
+                
 
                 #Assign the plot to the plot list
                 plot_list[[date]] <- plot
@@ -3050,7 +3117,7 @@ create_qc_plots = function(unified_list, plot_qc_vol, quiet) {
 
 
 ## Create growth curves based on the estimated and corrected volumes
-plot_growth_curves = function(final_vol_lst, vol_corrected, quiet) {
+plot_growth_curves = function(final_vol_lst, vol_corrected, theme, quiet) {
     ##Declare static function variables
 
     #Initialize the output plot list
@@ -3090,18 +3157,48 @@ plot_growth_curves = function(final_vol_lst, vol_corrected, quiet) {
         lng_temp_df <- dplyr::mutate(.data = lng_temp_df, "Vol_type" = vol_type, "Dates" = dates, .after = 4)
 
         if (vol_corrected == TRUE) {
-            #Plot the individual long pivot dataframes
-            plot <- suppressMessages(ggplot2::ggplot(data = lng_temp_df,
-                        mapping = aes(x = Dates, y = Volumes, fill = Mouse_ID, color = Mouse_ID, group = Mouse_ID)) +
-                        ggplot2::geom_point(show.legend = TRUE) +
-                        #ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
-                        ggplot2::geom_line(show.legend = FALSE, linewidth = 0.5) +
-                        ggplot2::scale_x_discrete(breaks = unique_dates, labels = as.character(unique_dates)) +
-                        ggplot2::ggtitle(paste0("Projection of corrected tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))) +
-                        labs(x = expression("Sampling dates"), y = expression("Tumor volumes mm"^3),
-                            color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
-                        ggplot2::theme_classic() +
-                        ggplot2::theme(plot.title = element_text(hjust = 0.5)))
+
+            if (theme == "light") {
+                #Plot the individual long pivot dataframes
+                plot <- suppressMessages(ggplot2::ggplot(data = lng_temp_df,
+                            mapping = aes(x = Dates, y = Volumes, fill = Mouse_ID, color = Mouse_ID, group = Mouse_ID)) +
+                            ggplot2::geom_point(show.legend = TRUE) +
+                            #ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
+                            ggplot2::geom_line(show.legend = FALSE, linewidth = 0.5) +
+                            ggplot2::scale_x_discrete(breaks = unique_dates, labels = as.character(unique_dates)) +
+                            ggplot2::ggtitle(paste0("Projection of corrected tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))) +
+                            labs(x = expression("Measurement dates"), y = expression("Tumor volumes mm"^3),
+                                color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
+                            ggplot2::theme_classic() +
+                            ggplot2::theme(plot.title = element_text(hjust = 0.5)))
+
+            } else if (theme == "dark") {
+                #Plot the individual long pivot dataframes
+                plot <- suppressMessages(ggplot2::ggplot(data = lng_temp_df,
+                            mapping = aes(x = Dates, y = Volumes, fill = Mouse_ID, color = Mouse_ID, group = Mouse_ID)) +
+                            ggplot2::geom_point(show.legend = TRUE) +
+                            #ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
+                            ggplot2::geom_line(show.legend = FALSE, linewidth = 0.5) +
+                            ggplot2::scale_x_discrete(breaks = unique_dates, labels = as.character(unique_dates)) +
+                            ggplot2::ggtitle(paste0("Projection of corrected tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))) +
+                            labs(x = expression("Measurement dates"), y = expression("Tumor volumes mm"^3),
+                                color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
+                            ggplot2::theme_classic() +
+                            ggplot2::theme(
+                            plot.background = element_rect(fill = "black", color = NA),
+                            panel.background = element_rect(fill = "black", color = NA),
+                            axis.title = element_text(color = "white"),
+                            axis.text = element_text(color = "white"),
+                            axis.line = element_line(color = "white"),
+                            axis.ticks = element_line(color = "white"),
+                            plot.title = element_text(color = "white", hjust = 0.5),
+                            legend.background = element_rect(fill = "black"),
+                            legend.key = element_rect(fill = "black", color = "black"),
+                            legend.text = element_text(color = "white"),
+                            legend.title = element_text(color = "white")))
+
+            }
+            
 
             #Assign the plot to the output list
             output_plots_list[[index]] <- plot
@@ -3110,18 +3207,48 @@ plot_growth_curves = function(final_vol_lst, vol_corrected, quiet) {
             names(output_plots_list)[[index]] <- paste0("Projection_of_corrected_tumor_volumes_", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))
 
         } else {
-            #Plot the individual long pivot dataframes
-            plot <- suppressMessages(ggplot2::ggplot(data = lng_temp_df,
-                        mapping = aes(x = Dates, y = Volumes, fill = Mouse_ID, color = Mouse_ID, group = Mouse_ID)) +
-                        ggplot2::geom_point(show.legend = TRUE) +
-                        #ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
-                        ggplot2::geom_line(show.legend = FALSE, linewidth = 0.5) +
-                        ggplot2::scale_x_discrete(breaks = unique_dates, labels = as.character(unique_dates)) +
-                        ggplot2::ggtitle(paste0("Projection of estimated tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))) +
-                        labs(x = expression("Sampling dates"), y = expression("Tumor volumes mm"^3),
-                            color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
-                        ggplot2::theme_classic() +
-                        ggplot2::theme(plot.title = element_text(hjust = 0.5)))
+
+            if (theme == "light") {
+                #Plot the individual long pivot dataframes
+                plot <- suppressMessages(ggplot2::ggplot(data = lng_temp_df,
+                            mapping = aes(x = Dates, y = Volumes, fill = Mouse_ID, color = Mouse_ID, group = Mouse_ID)) +
+                            ggplot2::geom_point(show.legend = TRUE) +
+                            #ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
+                            ggplot2::geom_line(show.legend = FALSE, linewidth = 0.5) +
+                            ggplot2::scale_x_discrete(breaks = unique_dates, labels = as.character(unique_dates)) +
+                            ggplot2::ggtitle(paste0("Projection of estimated tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))) +
+                            labs(x = expression("Measurement dates"), y = expression("Tumor volumes mm"^3),
+                                color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
+                            ggplot2::theme_classic() +
+                            ggplot2::theme(plot.title = element_text(hjust = 0.5)))
+
+            } else if (theme == "dark") {
+                #Plot the individual long pivot dataframes
+                plot <- suppressMessages(ggplot2::ggplot(data = lng_temp_df,
+                            mapping = aes(x = Dates, y = Volumes, fill = Mouse_ID, color = Mouse_ID, group = Mouse_ID)) +
+                            ggplot2::geom_point(show.legend = TRUE) +
+                            #ggalt::geom_xspline(spline_shape = -0.4, show.legend = FALSE) +
+                            ggplot2::geom_line(show.legend = FALSE, linewidth = 0.5) +
+                            ggplot2::scale_x_discrete(breaks = unique_dates, labels = as.character(unique_dates)) +
+                            ggplot2::ggtitle(paste0("Projection of estimated tumor volumes ", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))) +
+                            labs(x = expression("Measurement dates"), y = expression("Tumor volumes mm"^3),
+                                color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
+                            ggplot2::theme_classic() +
+                            ggplot2::theme(
+                            plot.background = element_rect(fill = "black", color = NA),
+                            panel.background = element_rect(fill = "black", color = NA),
+                            axis.title = element_text(color = "white"),
+                            axis.text = element_text(color = "white"),
+                            axis.line = element_line(color = "white"),
+                            axis.ticks = element_line(color = "white"),
+                            plot.title = element_text(color = "white", hjust = 0.5),
+                            legend.background = element_rect(fill = "black"),
+                            legend.key = element_rect(fill = "black", color = "black"),
+                            legend.text = element_text(color = "white"),
+                            legend.title = element_text(color = "white")))
+
+            }
+            
 
             #Assign the plot to the output list
             output_plots_list[[index]] <- plot
@@ -3154,7 +3281,7 @@ plot_growth_curves = function(final_vol_lst, vol_corrected, quiet) {
 ## The main function which will be called when the program is launched
 main = function(in_path = arguments$input_path, out_path = arguments$output_path, sep = arguments$separator, verb = arguments$verbose, silent = arguments$quiet,
 rm_na_samples = arguments$rm_na_samples, outlier_handl = arguments$outlier_handling, nonparametric_test = arguments$nonparametric_outlier_test,
-model_precision_test = arguments$precision_test, volume_corr = arguments$volume_correction, correction_method = arguments$final_correction_method) {
+model_precision_test = arguments$precision_test, volume_corr = arguments$volume_correction, correction_method = arguments$final_correction_method, plot_theme = arguments$plot_theme) {
     ##Load and clean the required data
 
     #Load the uCT and caliper measurements as lists
@@ -3356,10 +3483,12 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
 
         qc_plots_estim <- create_qc_plots(unified_list = unif_mData_corr_vols,
             plot_qc_vol = "estimated",
+            theme = plot_theme,
             quiet = silent)
 
         qc_plots_corr <- create_qc_plots(unified_list = unif_mData_corr_vols,
             plot_qc_vol = "corrected",
+            theme = plot_theme,
             quiet = silent)
 
     } else if (rm_na_samples == FALSE) {
@@ -3370,10 +3499,12 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
 
         qc_plots_estim <- create_qc_plots(unified_list = unif_mData_corr_vols,
             plot_qc_vol = "estimated",
+            theme = plot_theme,
             quiet = silent)
 
         qc_plots_corr <- create_qc_plots(unified_list = unif_mData_corr_vols,
             plot_qc_vol = "corrected",
+            theme = plot_theme,
             quiet = silent)
 
     }
@@ -3544,6 +3675,8 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
     
     ##Correct the total tumor volumes using the previously calculated correction matrix/vector
     if (volume_corr == TRUE && rm_na_samples == TRUE) {
+        ##If possible, return both corrected and estimated volumes so the user can choose which one to use
+
         #NOTE: in this case the correction method can be both 'linear_interpolation' or 'mean_correction' and the correction_matrix
         #can represent both a list of matrixes or vectors
         corr_total_volumes <- correct_total_tumor_volumes(final_tumor_volume_lst = estim_total_volumes,
@@ -3564,7 +3697,22 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
                 file = paste0(out_path, "/", file_name, ".csv"))
         }
 
+        #Also write the estimated volumes
+        #Write the resulting dataframe as a .csv
+        for (element in seq_along(estim_total_volumes)) {
+
+            #Create the file name for the saved .csv
+            file_name <- stringr::str_extract(string = names(estim_total_volumes)[element],
+                pattern = "[a-zA-Z0-9]+[_.\\-\\\\s]+[a-zA-Z0-9]+")
+            file_name <- paste0(file_name, "_estimated_volumes")
+
+            #Save the result as a .csv
+            readr::write_csv(x = estim_total_volumes[[element]],
+                file = paste0(out_path, "/", file_name, ".csv"))
+        }
+
     } else if (volume_corr == TRUE && rm_na_samples == FALSE) {
+        ##If possible, return both corrected and estimated volumes so the user can choose which one to use
         
         if (verb == TRUE) {
             cat("Volume correction was requested, however the NA containing samples were not removed, therefore the correction method
@@ -3587,6 +3735,20 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
 
             #Save the result as a .csv
             readr::write_csv(x = corr_total_volumes[[element]],
+                file = paste0(out_path, "/", file_name, ".csv"))
+        }
+
+        #Also write the estimated volumes
+        #Write the resulting dataframe as a .csv
+        for (element in seq_along(estim_total_volumes)) {
+
+            #Create the file name for the saved .csv
+            file_name <- stringr::str_extract(string = names(estim_total_volumes)[element],
+                pattern = "[a-zA-Z0-9]+[_.\\-\\\\s]+[a-zA-Z0-9]+")
+            file_name <- paste0(file_name, "_estimated_volumes")
+
+            #Save the result as a .csv
+            readr::write_csv(x = estim_total_volumes[[element]],
                 file = paste0(out_path, "/", file_name, ".csv"))
         }
 
@@ -3632,9 +3794,13 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
 
     #Plot and save the various projected tumor volumes
     if (volume_corr == TRUE) {
+        ##If volume correction is true, plot both the corrected and estimated volumes
+
+        
         #Plot the projected volume-corrected tumor volumes
         corrected_vol_plots <- plot_growth_curves(final_vol_lst = corr_total_volumes,
             vol_corrected = TRUE,
+            theme = plot_theme,
             quiet = silent)
 
         #Initialize a progress bar variable will allow to visualize a progression bar
@@ -3655,7 +3821,7 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
             #Set the name of the output file
             output_plot_name <- paste0(plot_dir, "/", names(corrected_vol_plots)[element], ".png")
             
-            #Set an output dvice
+            #Set an output device
             png(filename = output_plot_name, width = 1500, height = 750, units = "px")
             
             #Print the plot files to an output device
@@ -3667,10 +3833,10 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
 
         }
 
-    } else {
         #Plot the projected estimated tumor volumes
         estimated_vol_plots <- plot_growth_curves(final_vol_lst = estim_total_volumes,
             vol_corrected = FALSE,
+            theme = plot_theme,
             quiet = silent)
 
         #Initialize a progress bar variable will allow to visualize a progression bar
@@ -3691,7 +3857,44 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
             #Set the name of the output file
             output_plot_name <- paste0(plot_dir, "/", names(estimated_vol_plots)[element], ".png")
             
-            #Set an output dvice
+            #Set an output device
+            png(filename = output_plot_name, width = 1500, height = 750, units = "px")
+            
+            #Print the plot files to an output device
+            print(temp_plot)
+            
+            
+            #Reset the output device
+            dev.off()
+
+        }
+
+    } else {
+        #Plot the projected estimated tumor volumes
+        estimated_vol_plots <- plot_growth_curves(final_vol_lst = estim_total_volumes,
+            vol_corrected = FALSE,
+            theme = plot_theme,
+            quiet = silent)
+
+        #Initialize a progress bar variable will allow to visualize a progression bar
+        cli::cli_progress_bar(name = "Saving growth curve plots", total = length(estimated_vol_plots), type = "iterator", clear = FALSE)
+
+        #Save the projected estimated tumor volumes
+        for (element in seq_along(estimated_vol_plots)) {
+            #Declare dynamic variables
+
+            #Start the progress bar
+            if (silent == FALSE) {
+                cli::cli_progress_update()
+            }
+
+            #Initialize a new variable which will contain the current plt list element
+            temp_plot <- estimated_vol_plots[[element]]
+
+            #Set the name of the output file
+            output_plot_name <- paste0(plot_dir, "/", names(estimated_vol_plots)[element], ".png")
+            
+            #Set an output device
             png(filename = output_plot_name, width = 1500, height = 750, units = "px")
             
             #Print the plot files to an output device
