@@ -68,11 +68,11 @@ Caliper measurements
 
 For both .csv files
 - the first 3 columns of the .csv files are fixed ID columns with the following designations:
-  Column 1: 'Treatment_group_ID'
+  - Column 1: 'Treatment_group_ID'
     This column should contain the degination of the experimental group e.g.: Ctrl for the control group.
-  Column 2: 'Treatment'
+  - Column 2: 'Treatment'
     This column contain the treatment the gorup recieved, e.g.: control/none for the control group
-  Column 3: 'Mouse_ID'
+  - Column 3: 'Mouse_ID'
     This This column contain the designation of the mice, found in each group, e.g.: S1 (for sample 1)
 
 
