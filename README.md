@@ -30,13 +30,13 @@ Clone this repository or download the SynthXenoGen R script, and lunch the appli
 
 **Call examples**
 
-'''
+```
 To see the available option flags and descriptions type:
 Rscript SynthXenoGen_v1.0.0.r --help
 
 To generate a dataset with 6 measurements (with generated dates) from 10 samples , with a growth variation of 30-60% using an exponential growth model type:
 Rscript SynthXenoGen_v1.0.0.r -m 6 -s 10 --growth_model exponential  --request_dates TRUE --growth_variation_min 0.3 --growth_variation_max 0.6
-'''
+```
 
 ### XenoVol
 
