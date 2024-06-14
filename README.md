@@ -1,4 +1,4 @@
-### Xenograft volume estimation
+# Xenograft volume estimation
 
 ## About the repository
 
@@ -10,7 +10,7 @@ combined with reference measurements from µCT or MRI imaging.
 
 ## The Applications
 
-# SynthXenoGen
+### SynthXenoGen
 
 **Description**
 
@@ -38,7 +38,7 @@ To generate a dataset with 6 measurements (with generated dates) from 10 samples
 Rscript SynthXenoGen_v1.0.0.r -m 6 -s 10 --growth_model exponential  --request_dates TRUE --growth_variation_min 0.3 --growth_variation_max 0.6
 '''
 
-# XenoVol
+### XenoVol
 
 **Description**
 
