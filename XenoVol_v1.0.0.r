@@ -357,7 +357,7 @@ read_uCT_data = function(data_path, separator, quiet) {
         return(uCT_measurements)
 
     } else {
-        warning("No uCT input table was found in the ", data_path, " directory.")
+        stop("No uCT input table was found in the ", data_path, " directory.")
     }
 
 }
@@ -2684,7 +2684,7 @@ calculate_correction_matrixes = function(correction_factor_lst, uct_input, corr_
 
             #Assign the correction vector to the output list
             output_list[[index]] <- corr_factor_vector
-
+            
         }
 
     } else {
@@ -2696,14 +2696,18 @@ calculate_correction_matrixes = function(correction_factor_lst, uct_input, corr_
     
     #Name the output list elements according to the input list
     names(output_list) <- names(correction_factor_lst)
-
+    
 
     ##Return the output list
     return(output_list)
+    
 
 }
 
 
+
+
+########MARK: BUG!!!!!
 
 
 
@@ -2711,13 +2715,14 @@ calculate_correction_matrixes = function(correction_factor_lst, uct_input, corr_
 ## NOTE: this is a variant of the estimate_tumor_volume function
 estimate_total_tumor_volume = function(input_measurement_list, mean_f_values_list, remove_na_samples, quiet) {
     ##Declare the function variables
-
-    #List to return
-    return_list <- vector(mode = "list", length = length(input_measurement_list))
-
+  
 
     ##Assign function variables
     input_list <- input_measurement_list[[2]]
+    
+    #List to return
+    return_list <- vector(mode = "list", length = length(input_list)) #<- this is the fix!!!
+    
 
     #Initialize a progress bar variable will allow to visualize a progression bar
     cli::cli_progress_bar(name = "Estimate total tumor volumes", total = length(input_list), type = "iterator", clear = FALSE)
@@ -2744,7 +2749,7 @@ estimate_total_tumor_volume = function(input_measurement_list, mean_f_values_lis
 
         #Initialize a temporary df which will contain the estimated tumor volumes
         temp_vol_df <- data.frame(matrix(nrow = nrow(temp_lxw_df), ncol = ncol(temp_lxw_df)))
-
+        
         #This nested for loop will progress through the LxW columns and rows of each individual list element (dataframe) to estimate the tumor volumes using the 
         #appropriate formula
         for (col in seq_len(ncol(temp_lxw_df))) {
@@ -2775,7 +2780,7 @@ estimate_total_tumor_volume = function(input_measurement_list, mean_f_values_lis
 
     #Name the return_list elements according to the input list
     names(return_list) <- names(input_list)
-
+  
 
     ## Return the modified dataframes
     return(return_list)
@@ -3365,7 +3370,9 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
 
     } else if (outlier_handl == "remove") {
         grand_fc_means <- calc_mean_f(calculate_f_constants_output_list = unif_mData_clean_f_const, quiet = silent)
-
+#MARK: BUG!!!!
+    } else if (outlier_handl == "none") { # <- FIXED
+        grand_fc_means <- calc_mean_f(calculate_f_constants_output_list = unif_mData_f_const, quiet = silent)
     }
     
     #Estimate the tumor volume for the trimmed down measurment data which will be
