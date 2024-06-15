@@ -742,7 +742,7 @@ format_tumor_data = function(data, treatment_group_id, treatment) {
         colnames(input_data) <- new_column_names
 
         #Transform the input dataframe by adding additional columns to it
-        output_data <- dplyr::mutate(.data = input_data, Treatment_group_id = treatment_group_id, Treatment = treatment, Mouse_ID = sample_id, .before = 1)
+        output_data <- dplyr::mutate(.data = input_data, Treatment_group_ID = treatment_group_id, Treatment = treatment, Mouse_ID = sample_id, .before = 1)
 
         #Add the transformed dataframe to the output list
         output_list[[i]] <- output_data
@@ -785,7 +785,7 @@ plot_tumor_volumes = function(data, number_of_measurements, number_of_samples, d
 
     } else {
         long_df <- data.frame(matrix(nrow = nrow(input_dataframe) * number_of_measurements, ncol = 2))
-
+    
     }
     
 
@@ -799,7 +799,7 @@ plot_tumor_volumes = function(data, number_of_measurements, number_of_samples, d
         by_days <- as.numeric(format(dates, format = "%d")[2]) - as.numeric(format(dates, format = "%d")[1])
         days <- seq(from = 0, length.out = number_of_measurements, by = by_days)
     } else {
-        days <- as.numeric(unlist(stringr::str_extract_all(string = colnames(input_dataframe), pattern = "[0-9]$")))
+        days <- as.numeric(unlist(stringr::str_extract_all(string = colnames(input_dataframe), pattern = "[0-9]+$")))
     }
      
     
