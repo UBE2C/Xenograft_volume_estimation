@@ -651,7 +651,7 @@ fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list, quiet) {
         #This inner loop traverses the caliper measurements list
         for (item in seq_along(clean_caliper_data_list)) {
             #This if statement is responsible for matching the current element of the uCT list with the corresponding element of the caliper list
-            if (unique(temp_uct_df$Treatment_group_id) == unique(clean_caliper_data_list[[item]]$Treatment_group_id)) {
+            if (unique(temp_uct_df$Treatment_group_ID) == unique(clean_caliper_data_list[[item]]$Treatment_group_ID)) {
                 #Assign the corresponding caliper list element (dataframes) into the appropriate temporary dataframe variable
                 temp_calip_df <- clean_caliper_data_list[[item]]
                 
@@ -2759,7 +2759,7 @@ estimate_total_tumor_volume = function(input_measurement_list, mean_f_values_lis
         colnames(temp_vol_df) <- paste0("Estim_volume", sampling_dates)
 
         #Re-add the sample designation columns
-        temp_vol_df <- dplyr::mutate(.data = temp_vol_df, "Treatment_group_ID" = temp_df$Treatment_group_id,
+        temp_vol_df <- dplyr::mutate(.data = temp_vol_df, "Treatment_group_ID" = temp_df$Treatment_group_ID,
         "Treatment" = temp_df$Treatment, "Mouse_ID" = temp_df$Mouse_ID, .before = 1)
 
         #An if statement controlling if rows which were NAs in the uCT dataset and were removed should also be removed here
