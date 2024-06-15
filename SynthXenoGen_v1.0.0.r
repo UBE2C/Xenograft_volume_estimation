@@ -145,7 +145,7 @@ options_list <- list(
     This value then will be modified with a random value to represent sample to sample variation in the tumor growth.
     By default the base_intrinsic_growth_rate is set to 0.1."),
 
-    optparse::make_option(opt_str = c("--request_dates"), action = "store_true", default = FALSE, dest = "dates",
+    optparse::make_option(opt_str = c("--request_dates"), action = "store", type = "logical", default = FALSE, dest = "dates",
     help = "This argument controls if the generated synthetic dataframe should have dates as column names.
     By default the option is set to FALSE."),
 
@@ -180,7 +180,7 @@ options_list <- list(
     from measurement to measurement. (Note: the growth value will randomly fall between the minimum and maximum values)
     By default the script sets the minimum growth variation to 0.5 (50%)."),
 
-    optparse::make_option(opt_str = c("--treatment_requested"), action = "store_true", default = FALSE, dest = "treatment",
+    optparse::make_option(opt_str = c("--treatment_requested"), action = "store", type = "logical", default = FALSE, dest = "treatment",
     help = "This argument controls if the program should mimic the use of a treatment by modifying the generated measurement dimensions by a random amount,
     between a set range. \n
     By default the option is set to FALSE."),
@@ -201,13 +201,13 @@ options_list <- list(
     (Note: the shrink value will randomly fall between the minimum and maximum values) \n
     By default the script sets the maximum treatment variation to 0.1 (10%)."),
 
-    optparse::make_option(opt_str = c("--continuous_treatment"), action = "store_true", default = TRUE, dest = "continuous",
+    optparse::make_option(opt_str = c("--continuous_treatment"), action = "store", type = "logical", default = TRUE, dest = "continuous",
     help = "This argument controls if the growth limiting treatment effects should be applied continuously during random measurement generation, or only once,
     followed by a subtraction of treatment effect values from the already calculated growth values. The latter will mimic the effects of a one time treatment, 
     followed by a normal growth recovery.
     By default the option is set to TRUE, to mimic a continuous treatment effect."),
 
-    optparse::make_option(opt_str = c("--format_data"), action = "store_true", default = TRUE, dest = "format",
+    optparse::make_option(opt_str = c("--format_data"), action = "store", type = "logical", default = FALSE, dest = "format",
     help = "This argument controls if the output data should be formatted to be compatible for an f-constant based tumor volume calculation CLI tool.
     (Note: the reason for this CLI tool is to generate synthetic test data for the aforementioned program, so this option will be set to TRUE by default)
     By default the option is set to TRUE."),
@@ -220,11 +220,11 @@ options_list <- list(
     help = "This argument controls the treatment type noted into the Treatment column, if the format_data option was requested.
     By default the starting date is 'Control'."),
 
-    optparse::make_option(opt_str = c("--plot_data"), action = "store_true", default = TRUE, dest = "plot",
+    optparse::make_option(opt_str = c("--plot_data"), action = "store", type = "logical", default = TRUE, dest = "plot",
     help = "This argument controls if the output data should be plotted if the format_data option was requested.
     By default the option is set to TRUE."),
 
-    optparse::make_option(opt_str = c("--save_plots"), action = "store_true", default = TRUE, dest = "save_plots",
+    optparse::make_option(opt_str = c("--save_plots"), action = "store", type = "logical", default = TRUE, dest = "save_plots",
     help = "This argument controls if the data plots should be saved as .png files if the format_data option and plot_data option were requested.
     By default the option is set to TRUE."),
 
@@ -773,7 +773,7 @@ format_tumor_data = function(data, treatment_group_id, treatment) {
 
 
 ##Transform the dataframes to a long format for plotting
-plot_tumor_volumes = function(data, number_of_measurements, number_of_samples, dates, formatted_data = TRUE) {
+plot_tumor_volumes = function(data, number_of_measurements, number_of_samples, dates, formatted_data) {
     ##Declare/initialize function variables
     
     #Initialize the input dataframe (tumor volumes)
@@ -915,12 +915,12 @@ main = function(measurements = arguments$number_of_measurements, samples = argum
         if (plot == TRUE && format == TRUE) {
             message("Data plotting was requested. Generating data plot... \n")
 
-            Synth_data_plot <- plot_tumor_volumes(data = Formatted_synth_data, number_of_measurements = measurements, number_of_samples = samples, dates = Dates)
+            Synth_data_plot <- plot_tumor_volumes(data = Formatted_synth_data, number_of_measurements = measurements, number_of_samples = samples, dates = Dates, formatted_data = format)
             
         } else {
             message("Data plotting was requested. Generating data plot... \n")
 
-            Synth_data_plot <- plot_tumor_volumes(data = Synthetic_data, number_of_measurements = measurements, number_of_samples = samples, dates = Dates)
+            Synth_data_plot <- plot_tumor_volumes(data = Synthetic_data, number_of_measurements = measurements, number_of_samples = samples, formatted_data = format)
 
         }
 
