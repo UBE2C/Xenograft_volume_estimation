@@ -2707,10 +2707,6 @@ calculate_correction_matrixes = function(correction_factor_lst, uct_input, corr_
 
 
 
-########MARK: BUG!!!!!
-
-
-
 ## This function will estimate the final tumor volumes of the caliper measurements based on the mean f-constant
 ## NOTE: this is a variant of the estimate_tumor_volume function
 estimate_total_tumor_volume = function(input_measurement_list, mean_f_values_list, remove_na_samples, quiet) {
@@ -3370,8 +3366,8 @@ model_precision_test = arguments$precision_test, volume_corr = arguments$volume_
 
     } else if (outlier_handl == "remove") {
         grand_fc_means <- calc_mean_f(calculate_f_constants_output_list = unif_mData_clean_f_const, quiet = silent)
-#MARK: BUG!!!!
-    } else if (outlier_handl == "none") { # <- FIXED
+
+    } else if (outlier_handl == "none") {
         grand_fc_means <- calc_mean_f(calculate_f_constants_output_list = unif_mData_f_const, quiet = silent)
     }
     
