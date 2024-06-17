@@ -65,7 +65,7 @@ such as for xenografts growing on the flank region. Instead, it relies on refere
 **Requirements**
 
 The application requires the user to have R version 4.3.2 or later installed on their computer.<br>
-*NOTE: For the ease of use the application should automatically dwnload and install any required packages when first launched, so don't be alarmed :).*
+*NOTE: Just like with SynthXenoGen the application should automatically dwnload and install any required packages when first launched.*
 
 Additionally the input data must have the .csv extension and must be formatted in the following way:
 
