@@ -1,20 +1,20 @@
 # Xenograft volume estimation
-
-
+<br>
+<br>
 ## About the repository
 
 This repository contains the scripts for **SynthXenoGen** and **XenoVol**, two CLI applications/tools written in R.
 
 The general purpose of these applications is to help researchers to estimate the volumes of various xenografts using the obtained caliper measurements
 combined with reference measurements from µCT or MRI imaging.
-
-
+<br>
+<br>
 ## Applications
 
 ### SynthXenoGen
 
-
-**Description**
+<br>
+<br>**Description**<br>
 
 SynthXenoGen (Synthetic Xenograft Data Generator) is designed to generate synthetic sample data for the XenoVol script.
 It produces Length and Width measurements (mimicking caliper measurements), LxW measurement products, and full volume measurements (mimicking µCT measurements)
