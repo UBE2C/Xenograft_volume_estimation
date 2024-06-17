@@ -24,7 +24,7 @@ Although it's main purpose is to create sample data, I hope  that it will also b
 
 **Requirements**
 
-The application requires the user to have R version 4.3.2 or later installed on their computer.
+The application requires the user to have R version 4.3.2 or later installed on their computer.<br>
 *NOTE: For the ease of use the application should automatically dwnload and install any required packages when first launched, so don't be alarmed :).*
 
 
@@ -64,7 +64,7 @@ such as for xenografts growing on the flank region. Instead, it relies on refere
 
 **Requirements**
 
-The application requires the user to have R version 4.3.2 or later installed on their computer.
+The application requires the user to have R version 4.3.2 or later installed on their computer.<br>
 *NOTE: For the ease of use the application should automatically dwnload and install any required packages when first launched, so don't be alarmed :).*
 
 Additionally the input data must have the .csv extension and must be formatted in the following way:
