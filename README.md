@@ -28,6 +28,10 @@ It should automatically dwnload and install any required packages when first lau
 
 Clone this repository or download the SynthXenoGen R script, and lunch the application from the command line by using 'Rscript' followed by the script name and any required/desired option flags.
 
+*NOTE: for Windows useres, you will need to add the R executable file path to your global 'Path' environment in order call 'Rscript' from the command line. You will find an amazing guide on 
+how to do this on the documentation of the this.path R package ([here](https://www.rdocumentation.org/packages/this.path/versions/0.4.4/topics/Running.R.from.the.command-line)).
+After you set up your 'Path' environment I would recommend to use PowerShell for app calls.*
+
 **Call examples**
 
 
