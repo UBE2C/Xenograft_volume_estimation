@@ -105,9 +105,7 @@ Example .csv files can be found in the [Example_data](Example_data/) folder. Ple
 
 Like with SynthXenoGen, clone this repository or download the XenoVol R script, and lunch the application from the command line by using 'Rscript' followed by the script name and any required/desired option flags.
 
-*NOTE: for Windows useres, you will need to add the R executable file path to your global 'Path' environment in order call 'Rscript' from the command line. You will find an amazing guide on 
-how to do this on the documentation of the this.path R package ([here](https://www.rdocumentation.org/packages/this.path/versions/0.4.4/topics/Running.R.from.the.command-line)).
-After you set up your 'Path' environment I would recommend to use PowerShell for app calls.*
+*NOTE: again, for Windows useres, you will need to add the R executable file path to your global 'Path' environment in order call 'Rscript' from the command line.*
 
 
 **Call examples**
@@ -118,5 +116,9 @@ To see the available option flags and descriptions type:
 Rscript XenoVol_v1.0.1.r --help
 ```
 
+To process the provided example data:
+```
+Rscript XenoVol_v1.0.1.r -i Input_files -o Output_files -v TRUE --quiet FALSE -r TRUE --outlier_handling detect -t mZscore_test -p rmse -c TRUE -m linear_interpolation --plot_theme dark
+```
 
 
