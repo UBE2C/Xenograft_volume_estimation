@@ -8,12 +8,12 @@ This repository contains the scripts for **SynthXenoGen** and **XenoVol**, two C
 The general purpose of these applications is to help researchers to estimate the volumes of various xenografts using the obtained caliper measurements
 combined with reference measurements from µCT or MRI imaging.
 <br>
+<br>
 
 ## Applications
 <br>
 
 ### SynthXenoGen
-
 <br>
 <br>
 
@@ -23,7 +23,6 @@ SynthXenoGen (Synthetic Xenograft Data Generator) is designed to generate synthe
 It produces Length and Width measurements (mimicking caliper measurements), LxW measurement products, and full volume measurements (mimicking µCT measurements)
 and the associated growth curve plots. Note that the total volume calculation can be set to assumes an ellipsoid or hemi-ellipsoid shape.
 Although it's main purpose is to create sample data, I hope  that it will also be useful for other forms of simple xenograft growth modeling under various control and treatment conditions.
-
 <br>
 <br>
 
@@ -31,7 +30,6 @@ Although it's main purpose is to create sample data, I hope  that it will also b
 
 The application requires the user to have R version 4.3.2 or later installed on their computer.<br>
 *NOTE: For the ease of use the application should automatically dwnload and install any required packages when first launched, so don't be alarmed :).*
-
 <br>
 <br>
 
@@ -62,7 +60,6 @@ Rscript SynthXenoGen_v1.0.0.r -m 6 -s 10 --growth_model exponential  --request_d
 
 
 ### XenoVol
-
 <br>
 <br>
 
@@ -72,7 +69,6 @@ XenoVol (Xenograft Volume Estimator) is designed to streamline the estimation of
 It implements the f-constant formula established by Feldman JP et al. (2010) and expanded upon by Sápi et al. (2015).
 The primary purpose of XenoVol is to automate volume calculations, particularly for tumors where obtaining accurate height measurements is challenging or impractical,
 such as for xenografts growing on the flank region. Instead, it relies on reference µCT measurements obtained throughout the experiments.
-
 <br>
 <br>
 
@@ -115,7 +111,6 @@ An example LxW input file snippet:
 |...|...|...|...|...|
 
 Example .csv files can be found in the [Example_data](Example_data/) folder. Please use them as a reference for input file formatting.
-
 <br>
 <br>
 
@@ -124,7 +119,6 @@ Example .csv files can be found in the [Example_data](Example_data/) folder. Ple
 Like with SynthXenoGen, clone this repository or download the XenoVol R script, and lunch the application from the command line by using 'Rscript' followed by the script name and any required/desired option flags.
 
 *NOTE: again, for Windows useres, you will need to add the R executable file path to your global 'Path' environment in order call 'Rscript' from the command line.*
-
 <br>
 <br>
 
