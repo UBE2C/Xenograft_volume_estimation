@@ -492,7 +492,7 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
                     if (verbose == TRUE) {
                         warning("Some missing values were found in the following table: \n", names(uct_data_lst)[index], "\n", "at the following column: \n", colnames(temp_uCT_df)[col], "\n",
                         "at the following sample: \n", temp_uCT_df$Mouse_ID[is.na(temp_uCT_df[, col])], "\n",
-                        "The affected sample will be removed for the analysis.")
+                        "The affected sample will be removed for the analysis. \n")
 
                     }
                     
@@ -521,7 +521,7 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
         #Remove the columns with only NA values
         if (verbose == TRUE) {
             warning("In the following table: \n", names(uct_data_lst)[index], "\n", "the following columns: \n", colnames(temp_uCT_df)[uct_only_na_cols], "\n",
-                    "contain only missing values therefore they will be removed for the analysis")
+                    "contain only missing values therefore they will be removed for the analysis \n")
         }
         
         temp_uCT_df <- temp_uCT_df[, !uct_only_na_cols]
@@ -557,7 +557,7 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
                     if (verbose == TRUE) {
                         warning("Some missing values were found in the following table: \n", names(caliper_data_lst)[element], "\n", "at the following column: \n", colnames(temp_uCT_df)[col], "\n",
                         "at the following sample: \n", temp_calip_df$Mouse_ID[is.na(temp_calip_df[, col])], "\n",
-                        "The affected sample will be removed for the analysis.")
+                        "The affected sample will be removed for the analysis \n.")
 
                     }
                     
@@ -571,7 +571,7 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
             #A message to warn the user that the removal of NAs was not requested and this may lead to unintended consequences
             if (verbose == TRUE) {
                 warning("remove_na_samples was set to FALSE.  All uCT measurement samples will be kept, however NAs or NaNs should be expected in the final output if measurement correction was requested. \n",
-                "Additionally, tumor volume correction and goodness of fit test cannot be performed.")
+                "Additionally, tumor volume correction and goodness of fit test cannot be performed \n.")
             }
             
         }
@@ -586,7 +586,7 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
         #Remove the columns with only NA values
         if (verbose == TRUE) {
             warning("In the following table: \n", names(caliper_data_lst)[element], "\n", "the following columns: \n", colnames(temp_calip_df)[calip_only_na_cols], "\n",
-                    "contain only missing values therefore they will be removed for the analysis")
+                    "contain only missing values therefore they will be removed for the analysis \n")
         }
         
         temp_calip_df <- temp_calip_df[, !calip_only_na_cols]
@@ -4236,7 +4236,9 @@ single_reference = arguments$single_reference_mode) {
 
     ##Print session info
     if (verb == TRUE) {
-        cat(sessionInfo())
+        cat("\n")
+        print(sessionInfo())
+        cat(" \n")
     }
     
 
