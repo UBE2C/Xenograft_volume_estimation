@@ -122,7 +122,14 @@ To process the provided example data:
 ```
 Rscript XenoVol_v1.0.1.r -i Input_files -o Output_files -v TRUE --quiet FALSE -r TRUE --outlier_handling detect -t mZscore_test -p rmse -c TRUE -m linear_interpolation --plot_theme dark
 ```
+<br>
+<br>
 
+### Additional information
+
+Fore a small exploaration of the prediction performance of XenoVol please check out the [XenoVol_performance.md](/XenoVol_performance.md) file.
+<br>
+<br>
 
 ## References
 
