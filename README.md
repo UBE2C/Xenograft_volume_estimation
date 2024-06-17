@@ -1,5 +1,6 @@
 # Xenograft volume estimation
 
+
 ## About the repository
 
 This repository contains the scripts for **SynthXenoGen** and **XenoVol**, two CLI applications/tools written in R.
@@ -12,6 +13,7 @@ combined with reference measurements from µCT or MRI imaging.
 
 ### SynthXenoGen
 
+
 **Description**
 
 SynthXenoGen (Synthetic Xenograft Data Generator) is designed to generate synthetic sample data for the XenoVol script.
@@ -19,10 +21,12 @@ It produces Length and Width measurements (mimicking caliper measurements), LxW 
 and the associated growth curve plots. Note that the total volume calculation can be set to assumes an ellipsoid or hemi-ellipsoid shape.
 Although it's main purpose is to create sample data, I hope  that it will also be useful for other forms of simple xenograft growth modeling under various control and treatment conditions.
 
+
 **Requirements**
 
 The application requires the user to have R version 4.3.2 or later installed on their computer.
 It should automatically dwnload and install any required packages when first launched.
+
 
 **How to use**
 
@@ -31,6 +35,7 @@ Clone this repository or download the SynthXenoGen R script, and lunch the appli
 *NOTE: for Windows useres, you will need to add the R executable file path to your global 'Path' environment in order call 'Rscript' from the command line. You will find an amazing guide on 
 how to do this on the documentation of the this.path R package ([here](https://www.rdocumentation.org/packages/this.path/versions/0.4.4/topics/Running.R.from.the.command-line)).
 After you set up your 'Path' environment I would recommend to use PowerShell for app calls.*
+
 
 **Call examples**
 
@@ -45,7 +50,9 @@ To generate a dataset with 6 measurements (with generated dates) from 10 samples
 Rscript SynthXenoGen_v1.0.0.r -m 6 -s 10 --growth_model exponential  --request_dates TRUE --growth_variation_min 0.3 --growth_variation_max 0.6
 ```
 
+
 ### XenoVol
+
 
 **Description**
 
@@ -53,6 +60,7 @@ XenoVol (Xenograft Volume Estimator) is designed to streamline the estimation of
 It implements the f-constant formula established by Feldman JP et al. (2010) and expanded upon by Sápi et al. (2015).
 The primary purpose of XenoVol is to automate volume calculations, particularly for tumors where obtaining accurate height measurements is challenging or impractical,
 such as for xenografts growing on the flank region. Instead, it relies on reference µCT measurements obtained throughout the experiments.
+
 
 **Requirements**
 
@@ -93,7 +101,22 @@ An example LxW input file snippet:
 Example .csv files can be found in the [Example_data](Example_data/) folder. Please use them as a reference for input file formatting.
 
 
+**How to use**
 
+Like with SynthXenoGen, clone this repository or download the XenoVol R script, and lunch the application from the command line by using 'Rscript' followed by the script name and any required/desired option flags.
+
+*NOTE: for Windows useres, you will need to add the R executable file path to your global 'Path' environment in order call 'Rscript' from the command line. You will find an amazing guide on 
+how to do this on the documentation of the this.path R package ([here](https://www.rdocumentation.org/packages/this.path/versions/0.4.4/topics/Running.R.from.the.command-line)).
+After you set up your 'Path' environment I would recommend to use PowerShell for app calls.*
+
+
+**Call examples**
+
+
+To see the available option flags and descriptions type:
+```
+Rscript XenoVol_v1.0.1.r --help
+```
 
 
 
