@@ -1,33 +1,35 @@
 # Xenograft volume estimation
+
 <br>
-<br>
-## About the repository
+<br>## About the repository
 
 This repository contains the scripts for **SynthXenoGen** and **XenoVol**, two CLI applications/tools written in R.
 
 The general purpose of these applications is to help researchers to estimate the volumes of various xenografts using the obtained caliper measurements
 combined with reference measurements from µCT or MRI imaging.
+
 <br>
-<br>
-## Applications
+<br>## Applications
 
 ### SynthXenoGen
 
 <br>
-<br>**Description**<br>
+<br>**Description**
 
 SynthXenoGen (Synthetic Xenograft Data Generator) is designed to generate synthetic sample data for the XenoVol script.
 It produces Length and Width measurements (mimicking caliper measurements), LxW measurement products, and full volume measurements (mimicking µCT measurements)
 and the associated growth curve plots. Note that the total volume calculation can be set to assumes an ellipsoid or hemi-ellipsoid shape.
 Although it's main purpose is to create sample data, I hope  that it will also be useful for other forms of simple xenograft growth modeling under various control and treatment conditions.
 
-
+<br>
+<br>
 **Requirements**
 
 The application requires the user to have R version 4.3.2 or later installed on their computer.<br>
 *NOTE: For the ease of use the application should automatically dwnload and install any required packages when first launched, so don't be alarmed :).*
 
-
+<br>
+<br>
 **How to use**
 
 Clone this repository or download the SynthXenoGen R script, and lunch the application from the command line by using 'Rscript' followed by the script name and any required/desired option flags.
@@ -36,8 +38,8 @@ Clone this repository or download the SynthXenoGen R script, and lunch the appli
 how to do this on the documentation of the this.path R package ([here](https://www.rdocumentation.org/packages/this.path/versions/0.4.4/topics/Running.R.from.the.command-line)).
 After you set up your 'Path' environment I would recommend to use PowerShell for app calls.*
 
-
-**Call examples**
+<br>
+<br>**Call examples**
 
 
 To see the available option flags and descriptions, type:
