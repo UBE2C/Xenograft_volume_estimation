@@ -757,10 +757,10 @@ bind_and_unify_measurements = function(fitted_caliper_list, fitted_uCT_list, qui
             cli::cli_progress_update()
         }
 
-        unified_df_list[[i]] <- cbind(fitted_caliper_list[[i]], fitted_uCT_list[[i]][, c(grep(pattern = "volume", x = colnames(fitted_uCT_list[[i]]), ignore.case = TRUE))])
+        unified_df_list[[i]] <- cbind(fitted_caliper_list[[i]], fitted_uCT_list[[i]][, c(grep(pattern = "uct", x = colnames(fitted_uCT_list[[i]]), ignore.case = TRUE))])
         
         #Adjust the colnames of the new unified dataframes
-        colnames(unified_df_list[[i]]) <- c(colnames(fitted_caliper_list[[i]]), colnames(fitted_uCT_list[[i]])[c(grep(pattern = "volume", x = colnames(fitted_uCT_list[[i]]), ignore.case = TRUE))])
+        colnames(unified_df_list[[i]]) <- c(colnames(fitted_caliper_list[[i]]), colnames(fitted_uCT_list[[i]])[c(grep(pattern = "uct", x = colnames(fitted_uCT_list[[i]]), ignore.case = TRUE))])
     }
     
     #Name the output list elements
@@ -821,7 +821,7 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list, quiet)
 
         #Initialize a dynamic temp_dataframe to store currently processed list element
         temp_unif_df <- bind_and_unify_measurements_output_list[[element]]
-
+        
         #Initialize a dynamic temp_dataframe to store currently processed list element
         temp_trim_df <- data.frame()
 
@@ -835,14 +835,14 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list, quiet)
         #The inner loop will traverse the extracted sampling dates to split the dataframes down to pairs of LxV-volume columns for processing
         for (item in seq_along(sampling_dates)) {
             #Split down the current measurement dataframe into a single pair of LxW - Volume columns which belongs to the same sampling date
-            temp_trim_df <- as.data.frame(temp_unif_df[, grep(pattern = sampling_dates[item], x = colnames(temp_unif_df))])
+            temp_trim_df <- as.data.frame(temp_unif_df[, grep(pattern = sampling_dates[item], x = colnames(temp_unif_df), ignore.case = TRUE)])
             
             #Further split the previously created trimmed dataframes into a vector of LxW values
             temp_LxW_values <- temp_trim_df[, grep(pattern = "LxW", x = colnames(temp_trim_df), ignore.case = TRUE)]
 
             #Further split the previously created trimmed dataframes into a vector of Volume values
-            temp_ct_volumes <- temp_trim_df[, grep(pattern = "volume", x = colnames(temp_trim_df), ignore.case = TRUE)]
-
+            temp_ct_volumes <- temp_trim_df[, grep(pattern = "uct", x = colnames(temp_trim_df), ignore.case = TRUE)]
+            
             #Use the LxW and Volume vectors to calculate the f-constant for each sample and assign the results to the f-constants list (creates a nested list)
             f_constants[[element]][[item]] <- temp_ct_volumes / ((pi / 6) * (temp_LxW_values)^(3 / 2))
 
@@ -2230,8 +2230,8 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
         sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(measurement_list[[index]]), pattern = "_[0-9\\.]+")))
 
         #Initialize a new temporary df containing all the volume columns
-        temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
-
+        temp_vol_df <- measurement_list[[index]][, grep(pattern = "uct|volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
+        
         #An if statement controlling which values should be compared the corrected or the normal estimated
         if (correction == TRUE) {
             #Initialize a temporary uCT dataframe containing the measured uCT volumes
@@ -2276,7 +2276,7 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
             
             #Merge the uCT and corrected volumes into one comparison dataframe
             temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
-            #print(temp_comp_df)
+            
             #Initialize the contingency table variable
             comp_table <- data.frame()
 
@@ -2287,8 +2287,6 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
             for (date in seq_along(sampling_dates)) {
                 #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
                 comp_table <- temp_comp_df[, grep(pattern = sampling_dates[date], x = colnames(temp_comp_df), ignore.case = TRUE)]
-                #print(comp_table)
-                
                 
                 #Initialize a variable to hold the uCT measurements
                 uct_volumes <- comp_table[, 1]
@@ -2349,7 +2347,7 @@ pearson_test = function(measurement_list, correction = TRUE, quiet) {
         sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(measurement_list[[index]]), pattern = "_[0-9\\.]+")))
 
         #Initialize a new temporary df containing all the volume columns
-        temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
+        temp_vol_df <- measurement_list[[index]][, grep(pattern = "uct|volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
 
         #An if statement controlling which values should be compared the corrected or the normal estimated
         if (correction == TRUE) {
@@ -2454,7 +2452,7 @@ mae_test = function(measurement_list, correction = TRUE, quiet) {
         sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(measurement_list[[index]]), pattern = "_[0-9\\.]+")))
 
         #Initialize a new temporary df containing all the volume columns
-        temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
+        temp_vol_df <- measurement_list[[index]][, grep(pattern = "uct|volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
 
         #An if statement controlling which values should be compared the corrected or the normal estimated
         if (correction == TRUE) {
@@ -2558,7 +2556,7 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
         sampling_dates <- unique(unlist(stringr::str_extract_all(string = colnames(measurement_list[[index]]), pattern = "_[0-9\\.]+")))
 
         #Initialize a new temporary df containing all the volume columns
-        temp_vol_df <- measurement_list[[index]][, grep(pattern = "volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
+        temp_vol_df <- measurement_list[[index]][, grep(pattern = "uct|volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
 
         #An if statement controlling which values should be compared the corrected or the normal estimated
         if (correction == TRUE) {
@@ -2870,7 +2868,7 @@ correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
 
             #Initialize a dataframe holding only the tumor measurement columns
             temp_vol_df <- temp_calip_df[, grep(pattern = "volume", x = colnames(temp_calip_df), ignore.case = TRUE)]
-
+            
             #Apply the correction by dividing the caliper df with the correction matrix using the mapply function
             temp_corr_calip_df <- as.data.frame(mapply(FUN = "/", temp_vol_df, temp_corr_df))
 
@@ -2989,7 +2987,7 @@ create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
         temp_df <- unified_list[[index]]
 
         #Initialize a variable holding only the volumes
-        temp_vol_df <- temp_df[, grep(pattern = "volume", x = colnames(temp_df), ignore.case = TRUE)]
+        temp_vol_df <- temp_df[, grep(pattern = "uct|volume", x = colnames(temp_df), ignore.case = TRUE)]
         
 
         ##Processing
