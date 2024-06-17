@@ -78,6 +78,7 @@ For both .csv files
 
 An example for a µCT input file:
 |Treatment_group_ID|Treatment|Mouse_ID|uCT_2024-01-01|...|
+|---|---|---|---|---|
 |Ctrl|Control|Mouse_1|2.1234|...|
 
 Example .csv files can be found in the 'Example_data' folder. Please use them as a reference for input file formatting.
