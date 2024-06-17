@@ -12,17 +12,11 @@
 #Ignore VScode settings
 .vscode
 
+
 #Ignore test scripts
 
 
-#Ignore actual COMIX scripts
-
-
-
 #Ignore directories
-Backup_folders/
 Input_files/
-Intermediate_IO/
 Output_files/
-Raw_input_files/
 Synthetic_data_files/
