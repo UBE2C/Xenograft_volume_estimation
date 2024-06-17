@@ -59,21 +59,28 @@ Additionally the input data must have the .csv extension and must be formatted i
 
 Caliper measurements
 - the name of the .csv file must contain the word caliper (not case sensitive) such as 'Control_caliper_measurements.csv'
-- the measurement columns must contain the LxW designation to indicate that they contain the product of the Length and Width measurements
+- the measurement columns must contain the 'LxW' designation to indicate that they contain the product of the Length and Width measurements
 
 µCT measurements
 - the name of the .csv file must contain the word uCT (not case sensitive) such as 'Control_uCT_measurements.csv'
-- the measurement columns must contain the uCT designation to indicate that they contain the reference volumes.
-- there must be at least two µCT measurements available for the application to run.
+- the measurement columns must contain the 'uCT' designation to indicate that they contain the reference volumes.
 
 For both .csv files
-- the first 3 columns of the .csv files are fixed ID columns with the following designations:
+- The first 3 columns of the .csv files are fixed ID columns with the following designations:
   - Column 1: 'Treatment_group_ID'
     This column should contain the degination of the experimental group e.g.: Ctrl for the control group.
   - Column 2: 'Treatment'
     This column contain the treatment the gorup recieved, e.g.: control/none for the control group
   - Column 3: 'Mouse_ID'
     This This column contain the designation of the mice, found in each group, e.g.: S1 (for sample 1)
+- There should be no spaces in the column names, preferably use underscores (_) instead.
+- In the case of dates in the column names avoid using dot (2024.01.01) or forward slash (2024/01/01) notations and use hyphens (2024-01-01) or underscores (2024_01_01) instead.
+
+An example for a µCT input file:
+|Treatment_group_ID|Treatment|Mouse_ID|uCT_2024-01-01|...|
+|Ctrl|Control|Mouse_1|2.1234|...|
+
+Example .csv files can be found in the 'Example_data' folder. Please use them as a reference for input file formatting.
 
 
 
