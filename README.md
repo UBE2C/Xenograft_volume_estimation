@@ -76,12 +76,17 @@ For both .csv files
 - There should be no spaces in the column names, preferably use underscores (_) instead.
 - In the case of dates in the column names avoid using dot (2024.01.01) or forward slash (2024/01/01) notations and use hyphens (2024-01-01) or underscores (2024_01_01) instead.
 
-An example for a µCT input file:
+An example for a µCT input file snippet:
 |Treatment_group_ID|Treatment|Mouse_ID|uCT_2024-01-01|...|
 |---|---|---|---|---|
 |Ctrl|Control|Mouse_1|2.1234|...|
 
-Example .csv files can be found in the 'Example_data' folder. Please use them as a reference for input file formatting.
+An example LxW input file snippet:
+|Treatment_group_ID|Treatment|Mouse_ID|LxW_2024-01-01|...|
+|---|---|---|---|---|
+|Ctrl|Control|Mouse_1|1.4321|...|
+
+Example .csv files can be found in the [Example_data](Example_data/) folder. Please use them as a reference for input file formatting.
 
 
 
