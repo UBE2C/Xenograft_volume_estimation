@@ -1,6 +1,5 @@
 # Xenograft volume estimation
 <br>
-<br>
 
 ## About the repository
 
@@ -11,7 +10,6 @@ combined with reference measurements from µCT or MRI imaging.
 <br>
 
 ## Applications
-<br>
 <br>
 
 ### SynthXenoGen
