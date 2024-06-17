@@ -9,7 +9,7 @@ The general purpose of these applications is to help researchers to estimate the
 combined with reference measurements from µCT or MRI imaging.
 
 
-## The Applications
+## Applications
 
 ### SynthXenoGen
 
@@ -40,7 +40,7 @@ After you set up your 'Path' environment I would recommend to use PowerShell for
 **Call examples**
 
 
-To see the available option flags and descriptions type:
+To see the available option flags and descriptions, type:
 ```
 Rscript SynthXenoGen_v1.0.0.r --help
 ```
@@ -111,7 +111,7 @@ Like with SynthXenoGen, clone this repository or download the XenoVol R script, 
 **Call examples**
 
 
-To see the available option flags and descriptions type:
+To see the available option flags and descriptions, type:
 ```
 Rscript XenoVol_v1.0.1.r --help
 ```
@@ -120,5 +120,14 @@ To process the provided example data:
 ```
 Rscript XenoVol_v1.0.1.r -i Input_files -o Output_files -v TRUE --quiet FALSE -r TRUE --outlier_handling detect -t mZscore_test -p rmse -c TRUE -m linear_interpolation --plot_theme dark
 ```
+
+
+## References
+
+Feldman JP, Goldwasser R, Mark S, Schwartz J, Orion I (2009) A mathematical model for tumor volume evaluation using two-dimensions. <br>
+[J Appl Quant Methods 4: 455–462.](https://www.jaqm.ro/issues/volume-4,issue-4/6_feldman_goldwasser_mark_schwartz_orion.php) <br>
+<br>
+Sápi J, Kovács L, Drexler DA, Kocsis P, Gajári D, et al. (2015) Tumor Volume Estimation and Quasi-Continuous Administration for Most Effective Bevacizumab Therapy. <br>
+PLOS ONE 10(11): e0142190. [https://doi.org/10.1371/journal.pone.0142190](https://doi.org/10.1371/journal.pone.0142190)
 
 
