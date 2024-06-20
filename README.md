@@ -8,6 +8,9 @@ This repository contains the scripts for **SynthXenoGen** and **XenoVol**, two C
 The general purpose of these applications is to help researchers estimate the volumes of various xenografts using obtained caliper measurements
 combined with reference measurements from µCT or MRI imaging.
 <br>
+
+*NOTE: Please note that the applications found in this repository were only tested on synthetic data, and tehrefore may be considered to be in a beta state.*
+<br>
 <br>
 
 ## Applications
