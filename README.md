@@ -9,7 +9,7 @@ The general purpose of these applications is to help researchers estimate the vo
 combined with reference measurements from µCT or MRI imaging.
 <br>
 
-*NOTE: Please note that the applications found in this repository were only tested on synthetic data, and tehrefore may be considered to be in a beta state.*
+*NOTE: Please note that the applications found in this repository were only tested on synthetic data, and therefore may be considered to be in a beta state.*
 <br>
 <br>
 
