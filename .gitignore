@@ -1,5 +1,5 @@
 # Ignore the data files
-*.csv
+
 *.png
 *.numbers
 *.zip
