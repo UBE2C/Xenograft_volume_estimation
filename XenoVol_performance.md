@@ -105,12 +105,51 @@ dataset. Error bars are showing the standard error of the means* <br>
 *The figure shows the mean real and predicted xenograft volumes and their change over time in the Single-treatment <br/> 
 dataset. Error bars are showing the standard error of the means* <br>
 
+The resulting graphs showed that the predicted volumes track the real volumes quite closely and based on the error bars <br/>
+there seems to be no significant difference between the predicted and real tumor volumes (although a proper significance test <br/>
+was not done to confrm this). Nonetheless it is important to note that it seems that applying one of the correction methods <br/>
+seems to increase the prediction precision. <br>
 
+<br>
 
+## The effect of correction on prediction precision <br>
 
+In order to see if the previous observations hold true, and if the correction methods have any tangible effect on the <br/>
+precision of the predictions, I calculatated the Mean Absolute Percentage Error (MAPE) for all three XenoVol runs, and <br/>
+compared them to each other. Figure 3 A-C depicts the visualized MAPE values of the estimations with and without correction. <br>
 
+### Figure 3A <br/>
 
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/XV_method_MAPE_ctrl_p_dark.png">
+<source media="(prefers-color-scheme: light)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/XV_method_MAPE_ctrl_p_light.png">
+<img alt="Shows the light or dark mode version of the same plot." src="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/XV_method_MAPE_ctrl_p_dark.png">
+</picture>
+<br/>
 
+*The figure shows the MAPE values of XenoVol ran with and without correction on the Control dataset.* <br>
+
+### Figure 3B <br/>
+
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/XV_method_MAPE_G1_p_dark.png">
+<source media="(prefers-color-scheme: light)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/XV_method_MAPE_G1_p_light.png">
+<img alt="Shows the light or dark mode version of the same plot." src="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/XV_method_MAPE_G1_p_dark.png">
+</picture>
+<br/>
+
+*The figure shows the MAPE values of XenoVol ran with and without correction on the Continous-treatment dataset.* <br>
+
+### Figure 3C <br/>
+
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/XV_method_MAPE_G2_p_dark.png">
+<source media="(prefers-color-scheme: light)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/XV_method_MAPE_G2_p_light.png">
+<img alt="Shows the light or dark mode version of the same plot." src="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/XV_method_MAPE_G2_p_dark.png">
+</picture>
+<br/>
+
+*The figure shows the MAPE values of XenoVol ran with and without correction on the Single-treatment dataset.* <br>
 
 
 
