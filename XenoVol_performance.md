@@ -11,7 +11,7 @@ f-constant formula :). <br>
 
 <br>
 
-# Correct or not to correct... <br>
+# XenoVol - Correct or not to correct... <br>
 <br>
 
 ## Real mean tumor volumes <br>
@@ -151,5 +151,20 @@ compared them to each other. Figure 3 A-C depicts the visualized MAPE values of 
 
 *The figure shows the MAPE values of XenoVol ran with and without correction on the Single-treatment dataset.* <br>
 
+The resulting graphs suggest that both correction methods considerably reduce prediction error compared to the base method. <br/>
+However, there appears to be no significant difference between their performances (note that no formal test of significance <br/>
+was conducted). Nonetheless, of the two correction methods, 'linear interpolation' seems to have a slightly better effect <br/>
+on reducing prediction error, despite some limitations. First, it is limited to samples containing no sporadic NAs (or to <br/>
+sample sets where these samples were removed) and can only be used if at least two reference measurements are available. <br/>
+Meanwhile, 'mean correction' appears to reduce prediction errors to a lesser extent, but it is a more robust method that <br/>
+can be used even if only a single reference measurement is available and in the presence of samples with sporadic NAs. <br>
 
+Overall, both correction methods can noticably reduce prediction error and increase volume prediction accuracy. <br/>
+As there is no significant difference between the two methods, their use should be left to the user's discretion. <br/>
+Nonetheless, in general, the use of 'mean correction' is advised unless conditions specifically allow for the use <br/>
+of 'linear interpolation'. <br>
 
+<br>
+
+# XenoVol against the world... <br>
+<br>
