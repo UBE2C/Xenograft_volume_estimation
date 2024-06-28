@@ -1,7 +1,20 @@
-# XenoVol <br>
+# Introduction
+
+This document will focus on the predictive performance of XenoVol by comparing the results of the original f-constant <br/>
+formula and the self developed correction methods, and by comparing all these to the results of other, commnly used volume <br/>
+prediction formulas. <br>
+
+This is going to be a relatively long read, so if you have no time or desire to go through the whole document, the TL;DR is: <br/>
+Based on the aforementioned tests XenoVol offers a more precise, easy to use way to predict xenograft volumes compared to the <br/>
+other tested formulas, and the correction methods will increase the prediction accuracy even further compared to the original <br/>
+f-constant formula :). <br>
+
 <br>
 
-## Mean tumor volumes <br>
+# Correct or not to correct... <br>
+<br>
+
+## Real mean tumor volumes <br>
 
 First in order to see how well the original model and the applied 'homebrew' correction methods predict xenograft volumes, <br/>
 I calculated the mean tumor volumes of all collection time points, for all three generated datasets (Control dataset - <br/>
@@ -45,6 +58,8 @@ are showing the standard error of the means* <br>
 are showing the standard error of the means* <br>
 
 <br>
+
+## Real vs predicted mean tumor volumes <br>
 
 Then I overlayed the predicted tumor volumes I obtained by running XenoVol with two reference dataset, with no correction <br/>
 (volumes predicted by the original formula) and either with the 'mean_correction' or the 'linear_interpolation' methods. <br/>
