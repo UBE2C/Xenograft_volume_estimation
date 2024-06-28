@@ -1,4 +1,4 @@
-# Introduction
+# Introduction <br>
 
 This document will focus on the predictive performance of XenoVol by comparing the results of the original f-constant <br/>
 formula and the self-developed correction methods, and by comparing all these to the results of other, commonly used volume <br/>
@@ -172,11 +172,11 @@ of 'linear interpolation'. <br>
 ## Predicted mean xenograft volumes across various methods
 
 After exploring the effects of the afroementioned correction methods on volume prediction and prediction accuracy I <br/>
-wanted to explore, how XenoVol stacks up againts other, commonly used volume prediction methods. In order to do that <br/>
-I calculated the mean tumor volumes of all collection time points, for all three generated datasets using both XenoVol and <br/>
-multiple other formulas. Then, I overlaid the predicted tumor volumes to see how closely the predicted volumes follow <br/>
-the real xenograft volumes just like I did in the previously. Figure 4A-C depicts the visualized rpredicted mean  <br/>
-tumor volumes across various methods. <br>
+wanted to explore, how XenoVol stacks up againts other, commonly used volume prediction methods mentioned by Sápi et al. (2015).<br/>
+In order to do that I calculated the mean tumor volumes of all collection time points, for all three generated datasets <br/>
+using both XenoVol and multiple other formulas. Then, I overlaid the predicted tumor volumes to see how closely the <br/>
+predicted volumes follow the real xenograft volumes just like I did in the previous section.  <br/>
+Figure 4A-C depicts the visualized rpredicted mean tumor volumes across various methods. <br>
 
 ### Figure 4A <br/>
 
@@ -205,11 +205,79 @@ over time in the Continuous-treatment dataset. Error bars represent the standard
 ### Figure 4B <br/>
 
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_G1_p_dark.png">
-<source media="(prefers-color-scheme: light)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_G1_p_light.png">
-<img alt="Shows the light or dark mode version of the same plot." src="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_G1_p_dark.png">
+<source media="(prefers-color-scheme: dark)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_G2_p_dark.png">
+<source media="(prefers-color-scheme: light)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_G2_p_light.png">
+<img alt="Shows the light or dark mode version of the same plot." src="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_G2_p_dark.png">
 </picture>
 <br/>
 
 *The figure shows the mean predicted xenograft volumes across various prediction methods overlaid, and their change <br/>
 over time in the Single-treatment dataset. Error bars represent the standard error of the means.* <br>
+
+The resulting graphs showed that as before, the volumes predicted by XenoVol track the real volumes quite closely, however, <br/>
+the volumes predicted by the other tested methods seem to differ from the real volumes, and based on the error bars, <br/>
+this difference seems to be significant (although a proper significance test was not done to confirm this).  <br/>
+Nonetheless, it is important to note that all methods preserve the trend and trajectory of the volume changes. <br>
+
+<br>
+
+## Prediction precision across various methods <br>
+
+Although the previous paragraph suggests high prediction error for the comparison models, I wanted to further explore <br/>
+how the precision of the different methods compares. Therefore, as before, I calculated the MAPE for all <br/>
+tested methods, and compared them. Figure 5A-C depicts the visualized MAPE values for the estimations with the various methods. <br>
+
+### Figure 5A <br/>
+
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_MAPE_ctrl_p_dark.png">
+<source media="(prefers-color-scheme: light)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_MAPE_ctrl_p_light.png">
+<img alt="Shows the light or dark mode version of the same plot." src="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_MAPE_ctrl_p_dark.png">
+</picture>
+<br/>
+
+*The figure shows the MAPE values of all tested prediction methods on the Control dataset.* <br>
+
+### Figure 5B <br/>
+
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_MAPE_G1_p_dark.png">
+<source media="(prefers-color-scheme: light)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_MAPE_G1_p_light.png">
+<img alt="Shows the light or dark mode version of the same plot." src="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_MAPE_G1_p_dark.png">
+</picture>
+<br/>
+
+*The figure shows the MAPE values of all tested prediction methods on the Continuous-treatment dataset.* <br>
+
+### Figure 5C <br/>
+
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_MAPE_G2_p_dark.png">
+<source media="(prefers-color-scheme: light)" srcset="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_MAPE_G2_p_light.png">
+<img alt="Shows the light or dark mode version of the same plot." src="https://github.com/UBE2C/Xenograft_volume_estimation/blob/main/Performance_plots/all_methods_MAPE_G2_p_dark.png">
+</picture>
+<br/>
+
+*The figure shows the MAPE values of all tested prediction methods on the Single-treatment dataset.* <br>
+
+As expected, the resulting figures indicate, that the all tested prediction methods have a higher prediction error, <br/>
+compared to XenoVol. An interesting note is that the Xenograft-model formula shows a more erratic behaviour in the second <br/>
+dataset, while the other two methods (Ellipsoid formula and Hemi-ellipsoid formula) show a very consitent error rate <br/>
+in all three smaples. <br>
+
+Taken togeather, the results show that XenoVol over-performs the other tested method in volume prediction accuracy. <br>
+
+<br>
+
+# References <br>
+
+Sápi J, Kovács L, Drexler DA, Kocsis P, Gajári D, et al. (2015) Tumor Volume Estimation and Quasi-Continuous Administration for Most Effective Bevacizumab Therapy. <br>
+PLOS ONE 10(11): e0142190. [https://doi.org/10.1371/journal.pone.0142190](https://doi.org/10.1371/journal.pone.0142190) <br>
+
+Protocol Online (2005). [Xenograft tumor model protocol](https://www.protocol-online.org/prot/Protocols/Xenograft-Tumor-Model-Protocol-3810.html). <br>
+
+Tomayko MM, Reynolds CP. Determination of subcutaneous tumor size in athymic (nude) mice. Cancer Chemother Pharmacol. 1989;24(3):148-54. doi: [10.1007/BF00300234](https://link.springer.com/article/10.1007/BF00300234). PMID: [2544306](https://pubmed.ncbi.nlm.nih.gov/2544306/). <br>
+
+Sápi J, Drexler DA, Sápi Z, Kovács L (2014) Identification of C38 colon adenocarcinoma growth under bevacizumab therapy and without therapy. In: [CINTI 2014—15th IEEE International Symposium on Computational Intelligence and Informatics. pp. 443–448](https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=88f75305a523a145a71f115626e5f85e68da7dd5). Budapest, Hungary. <br>
+
+Heitjan DF, Manni A, Santen RJ. Statistical analysis of in vivo tumor growth experiments. [Cancer Res. 1993 Dec 15;53(24):6042-50](https://aacrjournals.org/cancerres/article/53/24/6042/499640/Statistical-Analysis-of-in-Vivo-Tumor-Growth). PMID: [8261420](https://pubmed.ncbi.nlm.nih.gov/8261420/).
