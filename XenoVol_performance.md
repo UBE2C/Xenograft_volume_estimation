@@ -1,13 +1,13 @@
 # Introduction
 
 This document will focus on the predictive performance of XenoVol by comparing the results of the original f-constant <br/>
-formula and the self developed correction methods, and by comparing all these to the results of other, commnly used volume <br/>
+formula and the self-developed correction methods, and by comparing all these to the results of other, commonly used volume <br/>
 prediction formulas. <br>
 
-This is going to be a relatively long read, so if you have no time or desire to go through the whole document, the TL;DR is: <br/>
+This is going to be a relatively long read. If you don't have time to go through the whole document, here is the TL;DR: <br/>
 Based on the aforementioned tests XenoVol offers a more precise, easy to use way to predict xenograft volumes compared to the <br/>
-other tested formulas, and the correction methods will increase the prediction accuracy even further compared to the original <br/>
-f-constant formula :). <br>
+other tested formulas. Additionally, the correction methods further increase prediction accuracy compared to the original <br/>
+f-constant formula. :). <br>
 
 <br>
 
@@ -16,10 +16,10 @@ f-constant formula :). <br>
 
 ## Real mean xenograft volumes <br>
 
-First in order to see how well the original model and the applied 'homebrew' correction methods predict xenograft volumes, <br/>
-I calculated the mean tumor volumes of all collection time points, for all three generated datasets (Control dataset - <br/>
-unimpeded growth, Continous-treatment dataset - continous, effective treatment and Single-treatment dataset - a single <br/>
-treatment event). Figure 1 A-C depicts the visualized real mean tumor volumes. <br>
+First, in order to see how well the original model and the homebrew correction methods predict xenograft volumes, <br/>
+I calculated the mean tumor volumes at all collection time points, for all three generated datasets (Control dataset - <br/>
+unimpeded growth, Continuous-treatment dataset - continuous, effective treatment, and Single-treatment dataset - a single <br/>
+treatment event). Figure 1A-C depicts the visualized real mean tumor volumes. <br>
 
 ### Figure 1A <br/>
 
@@ -42,7 +42,7 @@ the standard error of the means* <br>
 </picture>
 <br/>
 
-*The figure shows the mean real xenograft volumes and their change over time in the Continous-treatment dataset. Error bars <br/>
+*The figure shows the mean real xenograft volumes and their change over time in the Continuous-treatment dataset. Error bars <br/>
 are represent the standard error of the means* <br>
 
 ### Figure 1C <br/>
@@ -61,10 +61,10 @@ are represent the standard error of the means* <br>
 
 ## Real vs predicted mean xenograft volumes <br>
 
-Then, I overlaid the predicted tumor volumes I obtained by running XenoVol with two reference dataset, with no correction <br/>
+Then, I overlaid the predicted tumor volumes I obtained by running XenoVol with two reference datasets, with no correction <br/>
 (volumes predicted by the original formula) and either with the 'mean_correction' or the 'linear_interpolation' methods. <br/>
-By doing this I was  hoping to see how closely the predicted volumes (either with or woithout correction) follow the real <br/>
-xenograft volumes over time, and to see if the correction methods improve the prediction accuracy. Figure 2 A-C depicts the <br/>
+By doing this I was  hoping to see how closely the predicted volumes (either with or without correction) follow the real <br/>
+xenograft volumes over time, and to see if the correction methods improve the prediction accuracy. Figure 2A-C shows the <br/>
 visualized real and predicted mean tumor volumes. <br>
 
 ### Figure 2A <br/>
@@ -89,7 +89,7 @@ dataset. Error bars represent the standard error of the means* <br>
 </picture>
 <br/>
 
-*The figure shows the mean real and predicted xenograft volumes and their change over time in the Continous-treatment <br/> 
+*The figure shows the mean real and predicted xenograft volumes and their change over time in the Continuous-treatment <br/> 
 dataset. Error bars represent the standard error of the means* <br>
 
 ### Figure 2C <br/>
@@ -107,7 +107,7 @@ dataset. Error bars represent the standard error of the means* <br>
 
 The resulting graphs showed that the predicted volumes track the real volumes quite closely and based on the error bars <br/>
 there seems to be no significant difference between the predicted and real tumor volumes (although a proper significance test <br/>
-was not done to confrm this). Nonetheless it is important to note that it seems that applying one of the correction methods <br/>
+was not done to confirm this). Nonetheless, it is important to note that it seems that applying one of the correction methods <br/>
 seems to increase the prediction precision. <br>
 
 <br>
@@ -115,8 +115,8 @@ seems to increase the prediction precision. <br>
 ## The effect of correction on prediction precision <br>
 
 In order to see if the previous observations hold true, and if the correction methods have any tangible effect on the <br/>
-precision of the predictions, I calculatated the Mean Absolute Percentage Error (MAPE) for all three XenoVol runs, and <br/>
-compared them to each other. Figure 3 A-C depicts the visualized MAPE values of the estimations with and without correction. <br>
+precision of the predictions, I calculated the Mean Absolute Percentage Error (MAPE) for all three XenoVol runs, and <br/>
+compared them. Figure 3A-C depicts the visualized MAPE values of the estimations with and without correction. <br>
 
 ### Figure 3A <br/>
 
@@ -138,7 +138,7 @@ compared them to each other. Figure 3 A-C depicts the visualized MAPE values of 
 </picture>
 <br/>
 
-*The figure shows the MAPE values of XenoVol ran with and without correction on the Continous-treatment dataset.* <br>
+*The figure shows the MAPE values of XenoVol ran with and without correction on the Continuous-treatment dataset.* <br>
 
 ### Figure 3C <br/>
 
@@ -175,7 +175,7 @@ After exploring the effects of the afroementioned correction methods on volume p
 wanted to explore, how XenoVol stacks up againts other, commonly used volume prediction methods. In order to do that <br/>
 I calculated the mean tumor volumes of all collection time points, for all three generated datasets using both XenoVol and <br/>
 multiple other formulas. Then, I overlaid the predicted tumor volumes to see how closely the predicted volumes follow <br/>
-the real xenograft volumes just like I did in the previously. Figure 4 A-C depicts the visualized rpredicted mean  <br/>
+the real xenograft volumes just like I did in the previously. Figure 4A-C depicts the visualized rpredicted mean  <br/>
 tumor volumes across various methods. <br>
 
 ### Figure 4A <br/>
@@ -200,7 +200,7 @@ over time in the Control dataset. Error bars represent the standard error of the
 <br/>
 
 *The figure shows the mean predicted xenograft volumes across various prediction methods overlaid, and their change <br/>
-over time in the Continous-treatment dataset. Error bars represent the standard error of the means.* <br>
+over time in the Continuous-treatment dataset. Error bars represent the standard error of the means.* <br>
 
 ### Figure 4B <br/>
 
