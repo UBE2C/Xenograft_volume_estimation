@@ -9,6 +9,10 @@ Based on the aforementioned tests XenoVol offers a more precise, easy to use way
 other tested formulas. Additionally, the correction methods further increase prediction accuracy compared to the original <br/>
 f-constant formula. :). <br>
 
+**NOTE: All the tests were performed using synthetically generated data; therefore, all the results and conclusions in this <br/>
+document are also based on synthetically generated data. It is possible that real-life experimental data will generate very <br/>
+different results with much worse estimations and precision, so please keep that in mind before using XenoVol.** <br>
+
 <br>
 
 # XenoVol - Correct or not to correct... <br>
@@ -260,12 +264,12 @@ tested methods, and compared them. Figure 5A-C depicts the visualized MAPE value
 
 *The figure shows the MAPE values of all tested prediction methods on the Single-treatment dataset.* <br>
 
-As expected, the resulting figures indicate, that the all tested prediction methods have a higher prediction error, <br/>
-compared to XenoVol. An interesting note is that the Xenograft-model formula shows a more erratic behaviour in the second <br/>
-dataset, while the other two methods (Ellipsoid formula and Hemi-ellipsoid formula) show a very consitent error rate <br/>
-in all three smaples. <br>
+As expected, the resulting figures indicate that all tested prediction methods have a higher prediction error <br/>
+compared to XenoVol. An interesting note is that the Xenograft-model formula shows a more erratic behavior in the second <br/>
+dataset, while the other two methods (Ellipsoid formula and Hemi-ellipsoid formula) show a very consistent error rate <br/>
+in all three samples. <br>
 
-Taken togeather, the results show that XenoVol over-performs the other tested method in volume prediction accuracy. <br>
+Taken together, the results show that XenoVol outperforms the other tested methods in volume prediction accuracy. <br>
 
 <br>
 
