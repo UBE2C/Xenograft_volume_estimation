@@ -139,7 +139,7 @@ Rscript XenoVol_v1.0.1.r -i Input_files -o Output_files -v TRUE --quiet FALSE -r
 
 ### Additional information
 
-For a small exploration on the prediction performance of XenoVol please check out the [XenoVol_performance.md](/XenoVol_performance.md) file.
+For an exploration on the prediction performance of XenoVol please check out the [XenoVol_performance.md](/XenoVol_performance.md) file.
 <br>
 <br>
 
