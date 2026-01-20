@@ -139,7 +139,7 @@ Rscript XenoVol_v1.0.1.r -i Input_files -o Output_files -v TRUE --quiet FALSE -r
 
 ### Docker image
 A docker image built from the provided [Dockerfile](Docker_build/), with additional documentation and usage examples can be found on Docker Hub: <br>
-[Docker Hub](https://hub.docker.com/r/gabor/xenograft_volume_estimation)
+[Docker Hub](https://hub.docker.com/r/ube2c/xenograft_volume_estimation) 
 <br>
 <br>
 
