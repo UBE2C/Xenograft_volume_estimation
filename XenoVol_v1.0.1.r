@@ -26,30 +26,30 @@
 
 
 # The list of required packages
-CRAN_packages <- c("tidyverse", "optparse", "this.path", "outliers", "ggpubr", "ggsci", "cli")
+CRAN_packages <- c("stringr", "dplyr", "ggplot2", "tidyr", "readr", "optparse", "this.path", "outliers", "ggpubr", "ggsci", "cli")
 
 
 # A function to check and install packages
 package_controller = function(packages = CRAN_packages) {
-    
+
     #The main if statement to make sure there are packages to check
     if (!is.null(packages)) {
-        
+
         #This loop goes through the package list and feeds them to the checking if statement
         for (element in packages) {
-            
+
             #This if statement checks if the given package is part of the installed packages
             if (!is.element(element, installed.packages())) {
-                
-                message(paste0("The following package is not installed: ", element, "\n", 
-                "Installing ", element, "now"))
-                install.packages(element, repos = "https://mirrors.nic.cz/R/")
 
-            } 
+                message(paste0("The following package is not installed: ", element, "\n",
+                "Installing ", element, "now"))
+                install.packages(element)
+
+            }
         }
 
-    } 
-    
+    }
+
 }
 
 
@@ -67,7 +67,7 @@ package_loader = function(packages = CRAN_packages) {
 
 
 
-## Calling the package management function 
+## Calling the package management function
 ## NOTE: these functions must be called before the path determination for the option parsing and main function, so it can properly assign and modify the input and output directories
 ## before the options parsing happens!
 package_controller()
@@ -88,7 +88,7 @@ suppressMessages(package_loader())
 
 
 ## Define the main path to the directory this script is in
-# NOTE: Unless specified otherwise this directory will be used adn an I/O directory
+# NOTE: Unless specified otherwise this directory will be used as an I/O directory
 script_dir_path <- this.path::here()
 setwd(script_dir_path)
 
@@ -108,13 +108,13 @@ output_path <- paste0(script_dir_path, "/", "Output_files")
 # This function will look for the preferred input and output libraries and will create them if they are missing upon user request
 dir_management = function(input_1 = NULL, input_2 = NULL) {
     ##Define the function variables
-    
+
     #Declare a vector containing the preferred directory paths
     dir_paths <- c(input_path, output_path)
-    
+
     #This for loop will traverse the directory paths vector to feed the paths to the if statement below
     for (path in dir_paths) {
-        
+
         #The main if statement which will check if a directory exists
         if (!dir.exists(path)) {
             message("The following directory does not exists but is recommended for better organization: ", path, "\n",
@@ -122,7 +122,7 @@ dir_management = function(input_1 = NULL, input_2 = NULL) {
                 "1: Yes \n",
                 "2: No \n",
                 "(select a number)")
-            
+
             #The scan function will stop execution and will wait for user input, then it will set the value of
             #the input_1 variable based on user input
             input_1 <- scan(file = "stdin", what = numeric(), n = 1, quiet = TRUE)
@@ -150,7 +150,7 @@ dir_management = function(input_1 = NULL, input_2 = NULL) {
         input_2 <- scan(file = "stdin", what = numeric(), n = 1, quiet = TRUE)
     }
 
-    #An if statement to stop execution if the user choses so
+    #An if statement to stop execution if the user chooses so
     if (!is.null(input_2) && input_2 == 1) {
         quit(save = "no")
 
@@ -172,7 +172,7 @@ dir_management = function(input_1 = NULL, input_2 = NULL) {
         assign("def_output_path", script_dir_path, envir = parent.frame())
 
     }
-    
+
 }
 
 
@@ -273,7 +273,7 @@ To execute the tool, use the syntax:
 "Author: Gábor Bakos (UBE2C @ GitHub)"))
 
 # Parse the arguments to the arguments variable
-arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = options_list, 
+arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = options_list,
                                     description = prog_descr),
                                     args = commandArgs(trailingOnly = TRUE),
                                     print_help_and_exit = TRUE,
@@ -293,7 +293,7 @@ arguments <- optparse::parse_args(object = optparse::OptionParser(option_list = 
 
 
 
-## Calling the directory management function 
+## Calling the directory management function
 ## NOTE: tis function must be called before the option parsing and main function, so it can properly assign and modify the input and output directories
 ## before the options parsing happens!
 dir_management()
@@ -338,16 +338,16 @@ options(cli.progress_show_after = 0.5)
 
 
 ## Loading and cleaning the uCT data files needed for the calculations
-## NOTE: the first sub-function needs a new file with the uCT measurements 
+## NOTE: the first sub-function needs a new file with the uCT measurements
 
 
 # This function loads the uCT data from the intermediate I/O folder for further processing
 read_uCT_data = function(data_path, separator, quiet) {
     ##Declare function variables
-    
+
     #Declare a list onto which the uCT data will be added
     uCT_measurements <- list()
-    
+
 
     ##Start reading  the appropriate files
 
@@ -356,21 +356,21 @@ read_uCT_data = function(data_path, separator, quiet) {
 
     #Initialize a progress bar variable will allow to visualize a progression bar
     cli::cli_progress_bar(name = "Read files", total = length(input_files), type = "iterator", clear = FALSE)
-    
+
     #Grep the uCT file names for the checking if statement
     uCT_file_names <- input_files[grep(pattern = "uct", x = input_files, ignore.case = TRUE)]
 
     #This main if statement will check if the correct files are in the folder
     if (length(uCT_file_names) > 0) {
-        
+
         #Read each uCT .csv file and add them to the output list
         for (item in input_files) {
-            
+
             #Start the progress bar
             if (quiet == FALSE) {
                 cli::cli_progress_update()
             }
-            
+
 
             if (grepl(pattern = "uct", x = item, ignore.case = TRUE) == TRUE) {
                 uCT_measurements[[item]] <- read.csv(file = paste0(data_path, "/", item), sep = separator)
@@ -380,7 +380,7 @@ read_uCT_data = function(data_path, separator, quiet) {
         #Name the return list elements based on the original file names
         names(uCT_measurements) <- uCT_file_names
 
-        
+
         ##Return the uCT data
         return(uCT_measurements)
 
@@ -400,7 +400,7 @@ read_uCT_data = function(data_path, separator, quiet) {
 # This function loads the cleaned output files from the Data-processer module
 read_caliper_data = function(data_path, separator, quiet) {
     ##Declare function variables
-    
+
     #Declare a list onto which the caliper measurements will be added
     caliper_measurements <- list()
 
@@ -412,10 +412,10 @@ read_caliper_data = function(data_path, separator, quiet) {
 
     #Initialize a progress bar variable will allow to visualize a progression bar
     cli::cli_progress_bar(name = "Read files", total = length(input_files), type = "iterator", clear = FALSE)
-    
+
     #Grep the uCT file names for the checking if statement
     processed_caliper_file_names <- input_files[grep(pattern = "caliper", x = input_files, ignore.case = TRUE)]
-    
+
     #This main if statement will check if the correct files are in the folder
     if (length(processed_caliper_file_names) > 0) {
         #Add the measurements to the list with a for loop
@@ -430,7 +430,7 @@ read_caliper_data = function(data_path, separator, quiet) {
                 caliper_measurements[[item]] <- read.csv(file = paste0(data_path, "/", item), sep = separator)
 
             }
-            
+
         }
     } else {
         warning("No processed caliper measurement files was found in the ", data_path, " directory.")
@@ -446,7 +446,7 @@ read_caliper_data = function(data_path, separator, quiet) {
 
     ##Return the caliper_measurement list
     return(caliper_measurements)
-    
+
 }
 
 
@@ -455,7 +455,7 @@ read_caliper_data = function(data_path, separator, quiet) {
 ## This function cleans the uCT data by removing entries without any measurements
 clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_samples, quiet) {
     ##Declare function variables
-    
+
     #Declare a new list for the clean uCT dataframes
     clean_uCT_measurement <- vector(mode = "list", length = length(uct_data_lst))
     clean_caliper_measurement <- vector(mode = "list", length = length(caliper_data_lst))
@@ -466,14 +466,14 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
     #Define a vector containing the bools for the columns which contains only NAs if any
     uct_only_na_cols <- vector(mode = "logical")
     calip_only_na_cols <- vector(mode = "logical")
-    
+
 
     ##Clean the dataframes by removing rows containing sparse NA values
 
     #Initialize a progress bar variable will allow to visualize a progression bar
     cli::cli_progress_bar(name = "Clean uCT data", total = length(uct_data_lst), type = "iterator", clear = FALSE)
 
-    #This main for loop will walk through the uCT list of dataframes and removes rows where there are sparse NA values       
+    #This main for loop will walk through the uCT list of dataframes and removes rows where there are sparse NA values
     for (index in seq_along(uct_data_lst)) {
         #Start the progress bar
         if (quiet == FALSE) {
@@ -495,11 +495,11 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
                         "The affected sample will be removed for the analysis. \n")
 
                     }
-                    
-                    #Remove the appropriate sample row and update the temp dataframe with the new state
-                    temp_uCT_df <- temp_uCT_df[!is.na(temp_uCT_df[, col]), ]  
 
-                } 
+                    #Remove the appropriate sample row and update the temp dataframe with the new state
+                    temp_uCT_df <- temp_uCT_df[!is.na(temp_uCT_df[, col]), ]
+
+                }
 
             }
 
@@ -508,9 +508,9 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
             if(verbose == TRUE) {
                 warning("remove_na_samples was set to FALSE.  All uCT measurement samples will be kept, however NAs or NaNs should be expected in the final output if measurement correction was requested. \n")
             }
-            
+
         }
-        
+
 
         #This for loop will loop through the columns of the temp_datafame and flags each columns which contains only NAs for removal
         for (i in seq_len(ncol(temp_uCT_df))) {
@@ -523,9 +523,9 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
             warning("In the following table: \n", names(uct_data_lst)[index], "\n", "the following columns: \n", colnames(temp_uCT_df)[uct_only_na_cols], "\n",
                     "contain only missing values therefore they will be removed for the analysis \n")
         }
-        
+
         temp_uCT_df <- temp_uCT_df[, !uct_only_na_cols]
-        
+
 
         #Reset the row numbers for the modified dataframe
         rownames(temp_uCT_df) <- NULL
@@ -538,7 +538,7 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
     #Initialize a progress bar variable will allow to visualize a progression bar
     cli::cli_progress_bar(name = "Clean Caliper data", total = length(caliper_data_lst), type = "iterator", clear = FALSE)
 
-    #This main for loop will walk through the caliper list of dataframes and removes rows where there are sparse NA values       
+    #This main for loop will walk through the caliper list of dataframes and removes rows where there are sparse NA values
     for (element in seq_along(caliper_data_lst)) {
         #Start the progress bar
         if (quiet == FALSE) {
@@ -560,11 +560,11 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
                         "The affected sample will be removed for the analysis \n.")
 
                     }
-                    
-                    #Remove the appropriate sample row and update the temp dataframe with the new state
-                    temp_calip_df <- temp_calip_df[!is.na(temp_calip_df[, col]), ]  
 
-                } 
+                    #Remove the appropriate sample row and update the temp dataframe with the new state
+                    temp_calip_df <- temp_calip_df[!is.na(temp_calip_df[, col]), ]
+
+                }
 
             }
         } else {
@@ -573,9 +573,9 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
                 warning("remove_na_samples was set to FALSE.  All uCT measurement samples will be kept, however NAs or NaNs should be expected in the final output if measurement correction was requested. \n",
                 "Additionally, tumor volume correction and goodness of fit test cannot be performed \n.")
             }
-            
+
         }
-        
+
 
         #This for loop will loop through the columns of the temp_datafame and flags each columns which contains only NAs for removal
         for (i in seq_len(ncol(temp_calip_df))) {
@@ -588,9 +588,9 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
             warning("In the following table: \n", names(caliper_data_lst)[element], "\n", "the following columns: \n", colnames(temp_calip_df)[calip_only_na_cols], "\n",
                     "contain only missing values therefore they will be removed for the analysis \n")
         }
-        
+
         temp_calip_df <- temp_calip_df[, !calip_only_na_cols]
-        
+
 
         #Reset the row numbers for the modified dataframe
         rownames(temp_calip_df) <- NULL
@@ -608,7 +608,7 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
     output_list[[1]] <- clean_uCT_measurement
     output_list[[2]] <- clean_caliper_measurement
 
-    
+
     ##Return the output list
     return(output_list)
 
@@ -633,7 +633,7 @@ clean_input_data = function(uct_data_lst, caliper_data_lst, verbose, remove_na_s
 
 # Trim the caliper measurements to all the uCT entries based on date and refit the uCT data to the trimmed cleaned caliper measurements
 # This function will process the caliper measurements to fit the dates and samples recorded in the uCT measurements, and refits the clean uCT measurements
-# to the newly trimmed caliper data 
+# to the newly trimmed caliper data
 
 
 fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list, quiet) {
@@ -647,14 +647,14 @@ fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list, quiet) {
 
     #Initialize a final output list
     final_output_list <- vector(mode = "list", length = 2)
-    
+
     #Initialize temporary dataframes on which the processing can take place
     temp_uct_df <- data.frame()
     trimmed_uct_df <- data.frame()
     temp_calip_df <- data.frame()
 
     #Initialize a vector which will hold the name of the caliper list element which matches the uCT list element
-    list_element_name <- vector(mode = "character", length = 1)    
+    list_element_name <- vector(mode = "character", length = 1)
 
 
     ##Trim the caliper measurements
@@ -663,7 +663,7 @@ fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list, quiet) {
     cli::cli_progress_bar(name = "Fit the clean data", total = length(clean_uct_data_list), type = "iterator", clear = FALSE)
 
     #The main body of the function responsible for the trimming of the caliper list elements according to the uCT list elements
-    #The outer for loop traverses the uCT measurement list 
+    #The outer for loop traverses the uCT measurement list
     for (index in seq_along(clean_uct_data_list)) {
         #Start the progress bar
         if (quiet == FALSE) {
@@ -682,23 +682,23 @@ fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list, quiet) {
             if (unique(temp_uct_df$Treatment_group_ID) == unique(clean_caliper_data_list[[item]]$Treatment_group_ID)) {
                 #Assign the corresponding caliper list element (dataframes) into the appropriate temporary dataframe variable
                 temp_calip_df <- clean_caliper_data_list[[item]]
-                
+
                 #Assign the corresponding caliper list element name into the temporary list element name variable
                 list_element_name <- names(clean_caliper_data_list)[item]
 
                 #Trim the corresponding caliper measurement dataframe by the correct rows
                 temp_calip_df <- temp_calip_df[temp_calip_df$Mouse_ID %in% temp_uct_df$Mouse_ID, ]
-                
-                #Initialize a dynamic variable to store the positions of the corresponding uCT dates (using the trimmed uCT df) 
+
+                #Initialize a dynamic variable to store the positions of the corresponding uCT dates (using the trimmed uCT df)
                 matching_cols <- vector(mode = "numeric", length = length(uCT_sampling_dates))
 
                 #This for loop will pull the positions of the matching columns based on the dates of the uCT and caliper measurements
                 for (i in seq_along(uCT_sampling_dates)){
                     #Assign the positions of the matching columns
                     matching_cols[i] <- grep(pattern = uCT_sampling_dates[i], x = colnames(temp_calip_df))
-                    
+
                 }
-                
+
                 #Trim the corresponding caliper measurement dataframe by the correct columns
                 temp_calip_df <- temp_calip_df[, c(1, 2, 3, matching_cols)]
 
@@ -708,7 +708,7 @@ fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list, quiet) {
 
         #Assign the trimmed caliper measurement to the output list
         trimmed_caliper_list_out[[index]] <- temp_calip_df
-        
+
         #Fit the uCT dataframes to the potentially shorter, trimmed caliper dataframes
         trimmed_uct_df <- temp_uct_df[temp_uct_df$Mouse_ID %in% temp_calip_df$Mouse_ID, ]
 
@@ -736,8 +736,8 @@ fit_clean_data = function(clean_caliper_data_list, clean_uct_data_list, quiet) {
 #This function will carry out the column bind and organizes the dataframes according to the uCT measurements list, then creates a list of unified dataframes
 #using the selected column of the cuCT measurements and the transposed bound caliper measurements
 bind_and_unify_measurements = function(fitted_caliper_list, fitted_uCT_list, quiet) {
-    
-    
+
+
     ##Define the variables used in the function
 
     #Initialize a unified dataframe list, which will unify the bound caliper measurements and selected columns from the clean_uCT_list
@@ -749,7 +749,7 @@ bind_and_unify_measurements = function(fitted_caliper_list, fitted_uCT_list, qui
     #Initialize a progress bar variable will allow to visualize a progression bar
     cli::cli_progress_bar(name = "Unify data", total = length(fitted_caliper_list), type = "iterator", clear = FALSE)
 
-    
+
     #Unify the bound caliper measurements and selected columns from the clean_uCT_list
     for (i in seq_along(fitted_caliper_list)) {
         #Start the progress bar
@@ -758,11 +758,11 @@ bind_and_unify_measurements = function(fitted_caliper_list, fitted_uCT_list, qui
         }
 
         unified_df_list[[i]] <- cbind(fitted_caliper_list[[i]], fitted_uCT_list[[i]][, c(grep(pattern = "uct", x = colnames(fitted_uCT_list[[i]]), ignore.case = TRUE))])
-        
+
         #Adjust the colnames of the new unified dataframes
         colnames(unified_df_list[[i]]) <- c(colnames(fitted_caliper_list[[i]]), colnames(fitted_uCT_list[[i]])[c(grep(pattern = "uct", x = colnames(fitted_uCT_list[[i]]), ignore.case = TRUE))])
     }
-    
+
     #Name the output list elements
     names(unified_df_list) <- names(fitted_caliper_list)
 
@@ -803,7 +803,7 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list, quiet)
 
     #Initialize the final output list
     output_list <- vector(mode = "list", length = length(bind_and_unify_measurements_output_list))
-    
+
 
     ##Separate the measurements by date and calculate the corresponding f-constant
 
@@ -821,7 +821,7 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list, quiet)
 
         #Initialize a dynamic temp_dataframe to store currently processed list element
         temp_unif_df <- bind_and_unify_measurements_output_list[[element]]
-        
+
         #Initialize a dynamic temp_dataframe to store currently processed list element
         temp_trim_df <- data.frame()
 
@@ -836,22 +836,22 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list, quiet)
         for (item in seq_along(sampling_dates)) {
             #Split down the current measurement dataframe into a single pair of LxW - Volume columns which belongs to the same sampling date
             temp_trim_df <- as.data.frame(temp_unif_df[, grep(pattern = sampling_dates[item], x = colnames(temp_unif_df), ignore.case = TRUE)])
-            
+
             #Further split the previously created trimmed dataframes into a vector of LxW values
             temp_LxW_values <- temp_trim_df[, grep(pattern = "LxW", x = colnames(temp_trim_df), ignore.case = TRUE)]
 
             #Further split the previously created trimmed dataframes into a vector of Volume values
             temp_ct_volumes <- temp_trim_df[, grep(pattern = "uct", x = colnames(temp_trim_df), ignore.case = TRUE)]
-            
+
             #Use the LxW and Volume vectors to calculate the f-constant for each sample and assign the results to the f-constants list (creates a nested list)
             f_constants[[element]][[item]] <- temp_ct_volumes / ((pi / 6) * (temp_LxW_values)^(3 / 2))
 
-            
+
         }
 
         #Assign the new f-constant column names (based on sampling dates) to the initialized variable
         new_col_names[[element]] <- paste0("f_const", sampling_dates)
-        
+
     }
 
     #Initialize a progress bar variable will allow to visualize a progression bar
@@ -868,14 +868,14 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list, quiet)
 
         #Initialize a dynamic dataframe holding the current input list element (dataframe)
         temp_modif_df <- bind_and_unify_measurements_output_list[[element]]
-        
+
         #This inner loop traverses the nested items in the f-constants list (the calculated f-constants based on sampling dates)
         for (item in seq_along(f_constants[[element]])) {
-            #Bind the f-constant vector to the dynamic dataframe 
+            #Bind the f-constant vector to the dynamic dataframe
             temp_modif_df <- cbind(temp_modif_df, f_constants[[element]][[item]])
 
         }
-        
+
         #Assign the appended dataframes as the appropriate output list element
         output_list[[element]] <- temp_modif_df
 
@@ -915,7 +915,7 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list, quiet)
 
         #Re-assign the modified dataframes holding the mean_f-constants to the final output list
         output_list[[element]] <- temp_element_df
-        
+
     }
 
     #Assign the original list element names to the output list
@@ -942,7 +942,7 @@ calculate_f_constants = function(bind_and_unify_measurements_output_list, quiet)
 
 ## Determine if the data is normally distributed
 is_data_normal = function(calculate_f_constants_output_list, quiet) {
-    
+
 
     ##Declare dynamic variables
     shapiro_results <- vector(mode = "list", length = length(calculate_f_constants_output_list))
@@ -1007,7 +1007,7 @@ remove_outlier_f_const_NOTest = function(non_normal_list_element) {
     Q1 <- quantile(ordered_constants, 0.25, na.rm = TRUE)
     Q3 <- quantile(ordered_constants, 0.75, na.rm = TRUE)
 
-    #Calculate the IQR 
+    #Calculate the IQR
     IQR <- Q3 - Q1
 
     #Calculate the upper and lower boundaries
@@ -1023,13 +1023,13 @@ remove_outlier_f_const_NOTest = function(non_normal_list_element) {
 
     #Identify the lower outliers
     lower_outlier <- ordered_constants[ordered_constants < lower_boundary]
-        
+
     #An if statement to check if there were any upper outliers and if yes to remove them
     if (length(upper_outlier) == 0) {
         message("No outlier found on the right (upper) tail for input list element. \n")
     } else {
         message("The following elements are outliers on the right (upper) tail, and will be removed: \n", upper_outlier, "\n")
-            
+
         #Remove the upper outliers
         list_element_to_modify <- list_element_to_modify[!list_element_to_modify$f_const_mean %in% upper_outlier, ]
     }
@@ -1052,7 +1052,7 @@ remove_outlier_f_const_NOTest = function(non_normal_list_element) {
 
     ##Return the output list
     return(f_constant_outlier_free_measurements)
-    
+
 }
 
 
@@ -1090,7 +1090,7 @@ detect_outlier_f_const_NOTest = function(non_normal_list_element) {
     Q1 <- quantile(ordered_constants, 0.25, na.rm = TRUE)
     Q3 <- quantile(ordered_constants, 0.75, na.rm = TRUE)
 
-    #Calculate the IQR 
+    #Calculate the IQR
     IQR <- Q3 - Q1
 
     #Calculate the upper and lower boundaries
@@ -1106,7 +1106,7 @@ detect_outlier_f_const_NOTest = function(non_normal_list_element) {
 
     #Identify the lower outliers
     lower_outlier <- ordered_constants[ordered_constants < lower_boundary]
-        
+
     #An if statement to check if there were any upper outliers and if yes to remove them
     if (length(upper_outlier) == 0) {
         message("No outlier found on the right (upper) tail for input list element. \n")
@@ -1116,7 +1116,7 @@ detect_outlier_f_const_NOTest = function(non_normal_list_element) {
 
         #Assign the outlier f-constants to the output list
         outliers_list[[1]] <- upper_outlier
-            
+
     }
 
     #An if statement to check if there were any lower outliers and if yes to remove them
@@ -1135,21 +1135,21 @@ detect_outlier_f_const_NOTest = function(non_normal_list_element) {
         return(outliers_list)
 
     }
-    
-    
+
+
 }
 
 
 
 
 ## Modified z-score test (non-parametric) - this test is basically the Grubb's test, just with the median and MAD instead of mean and SD
-## The ida was taken from the following publication - DOI: (https://doi.org/10.1515/dema-2021-0041), however the publication used the SD with the median
+## The idea was taken from the following publication - DOI: (https://doi.org/10.1515/dema-2021-0041), however the publication used the SD with the median
 ## and not the MAD. The threshold to which the z-score is compared is calculated with the simple N-1/sqrt(N) formula taken from Graphpad Prism's test description.
 ## link: (https://www.graphpad.com/guides/prism/latest/statistics/stat_detecting_outliers_with_grubbs.htm)
 ## The function identifies and removes outliers from the input df based on the f-constants
 remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tail = TRUE) {
-    
-    
+
+
     ##Define function variables
 
     #Define an output dataframe
@@ -1157,10 +1157,10 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
 
     #Define the output list
     output_list <- vector(mode = "list", length = 2)
-    
+
     #Define the f_constant vector for sorting
     ordered_f_constants <- vector(mode = "numeric", length = nrow(non_normal_list_element))
-    
+
     #Define the median f-constant
     f_const_median <- vector(mode = "numeric", length = 1)
 
@@ -1218,7 +1218,7 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     #Calculate all the z-scores
     for (i in seq_along(non_normal_list_element$f_const_mean)) {
         z_scores[i] <- abs((non_normal_list_element$f_const_mean[i] - f_const_median) / f_const_mad)
-    
+
     }
 
     #Calculate the maximum z-score
@@ -1232,20 +1232,20 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
 
 
     ##Compare to critical value
-    
+
     #An if statement to control on which tail the outlier was identified
     if (left_tail == TRUE) {
         message("Identifying the lowest outlier on the left tail...")
-        
+
         #An if statement to determine if there is an outlier
         if (min_z_score > crit_t) {
-            
+
             #Assign the outlier identity and index
             lower_outlier_ident <- non_normal_list_element$f_const_mean[z_scores %in% min_z_score]
             min_outlier_index <- match(x = lower_outlier_ident, non_normal_list_element$f_const_mean)
 
             message("The following minimum value was found to be an outlier: ", lower_outlier_ident, "at the following row index: ", min_outlier_index, " and therefore will be removed. \n")
-            
+
             #Assign the modified dataframe
             output_df <- non_normal_list_element[!non_normal_list_element$f_const_mean %in% lower_outlier_ident, ]
 
@@ -1262,22 +1262,22 @@ remove_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
 
     } else {
         message("Identifying the highest outlier on the right tail...")
-        
+
         #An if statement to determine if there is an outlier
         if (max_z_score > crit_t) {
-            
+
             #Assign the outlier identity and index
             upper_outlier_ident <- non_normal_list_element$f_const_mean[z_scores %in% max_z_score]
             max_outlier_index <- match(x = upper_outlier_ident, non_normal_list_element$f_const_mean)
 
             message("The following maximum value was found to be an outlier: ", upper_outlier_ident, "\n", "at the following row index: ", max_outlier_index, " and therefore will be removed. \n")
-            
+
             #Assign the modified dataframe
             output_df <- non_normal_list_element[!non_normal_list_element$f_const_mean %in% upper_outlier_ident, ]
 
             #Update the while loop condition
             while_loop_run <- TRUE
-  
+
         } else {
             message("No upper outlier have been identified. \n")
 
@@ -1308,10 +1308,10 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
 
     #Define the output list
     output_list <- vector(mode = "list", length = 2)
-    
+
     #Define the f_constant vector for sorting
     ordered_f_constants <- vector(mode = "numeric", length = nrow(non_normal_list_element))
-    
+
     #Define the median f-constant
     f_const_median <- vector(mode = "numeric", length = 1)
 
@@ -1363,7 +1363,7 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     #Calculate all the z-scores
     for (i in seq_along(non_normal_list_element$f_const_mean)) {
         z_scores[i] <- abs((non_normal_list_element$f_const_mean[i] - f_const_median) / f_const_mad)
-    
+
     }
 
     #Calculate the maximum z-score
@@ -1377,14 +1377,14 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
 
 
     ##Compare to critical value
-    
+
     #An if statement to control on which tail the outlier was identified
     if (left_tail == TRUE) {
         message("Identifying the lowest outlier on the left tail...")
-        
+
         #An if statement to determine if there is an outlier
         if (min_z_score > crit_t) {
-            
+
             #Assign the outlier identity and index
             lower_outlier_ident <- non_normal_list_element$f_const_mean[z_scores %in% min_z_score]
             lower_outlier_index <- match(x = lower_outlier_ident, non_normal_list_element$f_const_mean)
@@ -1409,16 +1409,16 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
 
     } else {
         message("Identifying the highest outlier on the right tail...")
-        
+
         #An if statement to determine if there is an outlier
         if (max_z_score > crit_t) {
-            
+
             #Assign the outlier identity and index
             upper_outlier_ident <- non_normal_list_element$f_const_mean[z_scores %in% max_z_score]
             upper_outlier_index <- match(x = upper_outlier_ident, non_normal_list_element$f_const_mean)
 
             message("The following maximum value was found to be an outlier: ", upper_outlier_ident, "\n", "at the following row index: ", upper_outlier_index, "\n")
-            
+
             #Assign the detected min outlier to the output list
             output_list[[1]] <- upper_outlier_ident
             output_list[[2]] <- upper_outlier_index
@@ -1438,7 +1438,7 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
     }
 
 
-    
+
 
 }
 
@@ -1448,8 +1448,8 @@ detect_outlier_f_const_mZscore_test = function(non_normal_list_element, left_tai
 ## A parametric outlier test function using the Grubbs test
 ## The function identifies adn removes outliers from the input df based on the f-constants
 remove_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) {
-    
-    
+
+
     ##Declare function variables
 
     #Define f-constants vector
@@ -1490,11 +1490,11 @@ remove_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 
     #Assign the input dataframe as an output dataframe so in case of no outliers the original df will be returned
     output_df <- normal_list_element
-    
+
 
     #This if statement controls if the upper or lower outlier is identified and removed
     if (left_tail == TRUE) {
-        
+
         #Assign the value of Grubbs test on the left tail
         grubbs_lower_res <- outliers::grubbs.test(f_constants, opposite = TRUE)
 
@@ -1505,60 +1505,60 @@ remove_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
             lower_outlier_ident <- as.numeric(stringr::str_extract(grubbs_lower_res$alternative, "[0-9]+\\.[0-9]+"))
             lower_outlier_index <- match(x = lower_outlier_ident, f_constants)
 
-            #An if statement to make sure that the output is only returned if there was an outlier    
+            #An if statement to make sure that the output is only returned if there was an outlier
             if (length(lower_outlier_index) > 0) {
                 message("The following lower outliers will be removed: ", lower_outlier_ident, "\n")
-                
+
                 #Assign the modified dataframe
                 output_df <- normal_list_element[!f_constants %in% lower_outlier_ident, ]
 
                 #Update the while loop condition
                 while_loop_run <- TRUE
-                
+
             }
 
 
         } else {
             message("No significant outlier found on the left tail. \n")
-            
+
             #Update the while loop condition
             while_loop_run <- FALSE
-            
+
 
         }
 
 
     } else {
-        
+
         #Assign the value of Grubbs test on the right tail
         grubbs_upper_res <- outliers::grubbs.test(f_constants)
 
         #This if statement controls that if there is an outlier it should be identified and removed
         if (grubbs_upper_res$p.value < 0.05) {
-            
+
             #Assign outlier identity and index
             upper_outlier_ident <- as.numeric(stringr::str_extract(grubbs_upper_res$alternative, "[0-9]+\\.[0-9]+"))
             upper_outlier_index <- match(x = upper_outlier_ident, f_constants)
-                
+
             #An if statement to make sure that the output is only returned if there was an outlier
             if (length(upper_outlier_index) > 0) {
                 message("The following upper outliers will be removed: ", upper_outlier_ident, "\n")
-                
+
                 #Assign the modified dataframe
                 output_df <- normal_list_element[!f_constants %in% upper_outlier_ident, ]
 
                 #Update the while loop condition
                 while_loop_run <- TRUE
-                
+
             }
 
 
         } else {
             message("No significant outlier found on the right tail. \n")
-            
+
             #Update the while loop condition
             while_loop_run <- FALSE
-            
+
         }
     }
 
@@ -1570,7 +1570,7 @@ remove_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 
     ##Return the output list
     return(list(output_df, while_loop_run))
-    
+
 }
 
 
@@ -1578,7 +1578,7 @@ remove_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 
 ## A parametric outlier test function using the Grubbs test
 ## The function identifies adn removes outliers from the input df based on the f-constants
-detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) {  
+detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) {
     ##Declare function variables
 
     #Define f-constants vector
@@ -1613,7 +1613,7 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 
     #This if statement controls if the upper or lower outlier is identified and removed
     if (left_tail == TRUE) {
-        
+
         #Assign the value of Grubbs test on the left tail
         grubbs_lower_res <- outliers::grubbs.test(f_constants, opposite = TRUE)
 
@@ -1624,10 +1624,10 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
             lower_outlier_ident <- as.numeric(stringr::str_extract(grubbs_lower_res$alternative, "[0-9]+\\.[0-9]+"))
             lower_outlier_index <- match(x = lower_outlier_ident, f_constants)
 
-            #An if statement to make sure that the output is only returned if there was an outlier    
+            #An if statement to make sure that the output is only returned if there was an outlier
             if (length(lower_outlier_index) > 0) {
                 message("The following minimum value was found to be an outlier: ", lower_outlier_ident, "at the following row index: ", lower_outlier_index)
-                
+
                 #Assign the detected min outlier to the output list
                 output_list[[1]] <- lower_outlier_ident
                 output_list[[2]] <- lower_outlier_index
@@ -1637,7 +1637,7 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 
                 #Return the output list
                 return(output_list)
-                
+
             }
 
 
@@ -1647,21 +1647,21 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
         }
 
     } else {
-        
+
         #Assign the value of Grubbs test on the right tail
         grubbs_upper_res <- outliers::grubbs.test(f_constants)
 
         #This if statement controls that if there is an outlier it should be identified
         if (grubbs_upper_res$p.value < 0.05) {
-            
+
             # Assign outlier identity and index
             upper_outlier_ident <- as.numeric(stringr::str_extract(grubbs_upper_res$alternative, "[0-9]+\\.[0-9]+"))
             upper_outlier_index <- match(x = upper_outlier_ident, f_constants)
-                
+
             #An if statement to make sure that the output is only returned if there was an outlier
             if (length(upper_outlier_index) > 0) {
                 message("The following maximum value was found to be an outlier: ", upper_outlier_ident, "\n", "at the following row index: ", upper_outlier_index)
-                
+
                 #Assign the detected min outlier to the output list
                 output_list[[1]] <- upper_outlier_ident
                 output_list[[2]] <- upper_outlier_index
@@ -1671,17 +1671,17 @@ detect_outlier_f_const_Grubbs = function(normal_list_element, left_tail = TRUE) 
 
                 #Return the output list
                 return(output_list)
-                
+
             }
 
         } else {
             message("No significant outlier found on the right tail.")
-            
+
         }
     }
 
-    
-    
+
+
 }
 
 
@@ -1699,7 +1699,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
     #Initialize a progress bar variable will allow to visualize a progression bar
     cli::cli_progress_bar(name = "Remove outliers", total = length(is_data_normal_output_list), type = "iterator", clear = FALSE)
-    
+
     for (index in seq_along(is_data_normal_output_list)) {
         #Start the progress bar
         if (quiet == FALSE) {
@@ -1716,7 +1716,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
                 #Run the appropriate outlier cleaner function and assign the result to the appropriate output list element
                 outlier_free_output_list[[index]] <- remove_outlier_f_const_NOTest(calculate_f_constants_output_list[[index]])
-                
+
             } else if (nonparam_test == "mZscore_test") {
                 #Print the name of the current list element for better orientation
                 message(names(calculate_f_constants_output_list)[[index]])
@@ -1733,8 +1733,8 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
                     outlier_free_output_list[[index]] <- result[[1]]
 
                     #Update while_loop_run's eval parameter based on outliers_found
-                    while_loop_run <- result[[2]]  
-                    
+                    while_loop_run <- result[[2]]
+
                 }
 
                 #Set the eval condition for the while loop
@@ -1750,7 +1750,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
                     #Update while_loop_run's eval parameter based on outliers_found
                     while_loop_run <- result[[2]]
-                    
+
                 }
 
             }
@@ -1764,7 +1764,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
             #Set the eval condition for the while loop
             while_loop_run <- TRUE
-            
+
             #Initiate a while loop which will loop through the dataframe while outliers on the left tail are present
             while (while_loop_run == TRUE) {
                 #Run the appropriate outlier cleaner function and assign the result to a new list which will hold the two elements
@@ -1775,7 +1775,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
                 #Update while_loop_run's eval parameter based on outliers_found
                 while_loop_run <- result[[2]]
-                    
+
             }
 
             #Set the eval condition for the while loop
@@ -1783,7 +1783,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
             #Initiate a while loop which will loop through the dataframe while outliers on the right tail are present
             while (while_loop_run == TRUE) {
-                #Run the appropriate outlier cleaner function and assign the result to a new list which will hold the two elements 
+                #Run the appropriate outlier cleaner function and assign the result to a new list which will hold the two elements
                 result <- remove_outlier_f_const_Grubbs(calculate_f_constants_output_list[[index]], left_tail = FALSE)
 
                 #Assign the appropriate outlier cleaner function's result to the appropriate output list element
@@ -1791,7 +1791,7 @@ outlier_cleaner = function(calculate_f_constants_output_list, is_data_normal_out
 
                 #Update while_loop_run's eval parameter based on outliers_found
                 while_loop_run <- result[[2]]
-                    
+
             }
 
         }
@@ -1813,29 +1813,29 @@ outlier_detector = function(calculate_f_constants_output_list, is_data_normal_ou
     cli::cli_progress_bar(name = "Detect outliers", total = length(is_data_normal_output_list), type = "iterator", clear = FALSE)
 
     #This construct checks if the f-constants from the elements of the calculate f-constants output list are normally distributed
-    #NOTE: this is possible because the element order is preserved between the calc.f-const list and the is_data_normal list 
+    #NOTE: this is possible because the element order is preserved between the calc.f-const list and the is_data_normal list
     for (index in seq_along(is_data_normal_output_list)) {
         #Start the progress bar
         if (quiet == FALSE) {
             cli::cli_progress_update()
         }
-        
+
         #This if statement checks if the f-factor distribution is normal
         if (is_data_normal_output_list[[index]]$p.value < 0.05) {
             message("\nIt seems your f-constants show a non-normal distribution. The chosen non-parametric test will be used for outlier detection.")
-        
+
             #This if statement is responsible for choosing a non-parametric test
             if (nonparam_test == "numeric_outlier_test") {
-                
+
                 #Print the name of the current list element for better orientation
                 message(names(calculate_f_constants_output_list)[[index]])
 
                 #Run the appropriate detection test
                 detect_outlier_f_const_NOTest(calculate_f_constants_output_list[[index]])
-  
+
             } else if (nonparam_test == "mZscore_test") {
 
-                
+
                 #Print the name of the current list element for better orientation
                 message(names(calculate_f_constants_output_list)[[index]])
 
@@ -1846,11 +1846,11 @@ outlier_detector = function(calculate_f_constants_output_list, is_data_normal_ou
                 detect_outlier_f_const_mZscore_test(calculate_f_constants_output_list[[index]], left_tail = FALSE)
 
             }
-        
+
         } else {
             message("\nIt seems your f-constants show a normal distribution. A parametric Grubbs test will be used for outlier detection.")
 
-            
+
             #Print the name of the current list element for better orientation
             message(names(calculate_f_constants_output_list)[[index]])
 
@@ -1859,10 +1859,10 @@ outlier_detector = function(calculate_f_constants_output_list, is_data_normal_ou
 
             #Run the appropriate detection test
             detect_outlier_f_const_Grubbs(calculate_f_constants_output_list[[index]], left_tail = FALSE)
-                    
+
         }
 
-    }   
+    }
 
 }
 
@@ -1879,7 +1879,7 @@ outlier_detector = function(calculate_f_constants_output_list, is_data_normal_ou
 
 
 
-## Thi function will calculate the mean  f-constants
+## This function will calculate the mean  f-constants
 calc_mean_f = function(calculate_f_constants_output_list, quiet) {
     ##Declare the function variables
 
@@ -1931,7 +1931,7 @@ estimate_tumor_volume = function(input_measurement_list, mean_f_values_list, qui
 
 
     ##Calculations
-    
+
     #This for loop will walk along the input list to access each element
     #NOTE: the length of the input_df and the mean_f_values_list is the same, so indexes can be used for both
     for (index in seq_along(input_list)) {
@@ -1951,15 +1951,15 @@ estimate_tumor_volume = function(input_measurement_list, mean_f_values_list, qui
 
         #Adjust the colnames of the new temp_lxw_df
         colnames(temp_lxw_df) <- colnames(temp_df)[grep(pattern = "LxW", x = colnames(temp_df), ignore.case = TRUE)]
-        
+
         #Initialize a temporary df which will contain the estimated tumor volumes
         temp_vol_df <- data.frame(matrix(nrow = nrow(temp_lxw_df), ncol = ncol(temp_lxw_df)))
 
-        #This nested for loop will progress through the LxW columns and rows of each individual list element (dataframe) to estimate the tumor volumes using the 
+        #This nested for loop will progress through the LxW columns and rows of each individual list element (dataframe) to estimate the tumor volumes using the
         #appropriate formula
         for (col in seq_len(ncol(temp_lxw_df))) {
             for (row in seq_len(nrow(temp_lxw_df))) {
-            
+
                 #Estimate and assign the tumor volumes to each individual sample in the temp_df
                 temp_vol_df[row, col] <- (pi / 6) * mean_f_values_list[[index]] * (temp_lxw_df[row, col])^(3 / 2)
             }
@@ -1967,7 +1967,7 @@ estimate_tumor_volume = function(input_measurement_list, mean_f_values_list, qui
 
         #Name the new columns containing the estimated tumor volumes
         colnames(temp_vol_df) <- paste0("Estim_volume", sampling_dates)
-        
+
         #Bind the estimated volumes to the parent dataframe
         temp_df <- cbind(temp_df, temp_vol_df)
 
@@ -1979,7 +1979,7 @@ estimate_tumor_volume = function(input_measurement_list, mean_f_values_list, qui
     #Name the return_list elements according to the input list
     names(return_list) <- names(input_measurement_list)
 
-    
+
     ## Return the modified dataframes
     return(return_list)
 
@@ -1999,7 +1999,7 @@ estimate_tumor_volume = function(input_measurement_list, mean_f_values_list, qui
 
 
 ## Correct the estimated tumor volumes
-## NOTE: this is a complex function. The idea is that it tests what percentage of tumor volume deviation comes from the 0.5, 1, 1.5, 2 
+## NOTE: this is a complex function. The idea is that it tests what percentage of tumor volume deviation comes from the 0.5, 1, 1.5, 2
 ## standard deviation distance of sample f-constants from the calculated mean f-constant. Then based on which SD bracket
 ##f-constants fall into it corrects the estimated tumor volume by the appropriate percentage depending on if the value
 ## is under or over estimated (this depends on which direction the f-constant is deviating from the mean)
@@ -2042,16 +2042,16 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list,
         #Define a vector containing the standard deviations of 0.5-2 SD below mean
         below_mean_std_vals <- vector(mode = "numeric", length = 11)
         names(below_mean_std_vals) <- as.character(seq(from = 0, to = 5, by = 0.5))
-        
+
         #Define a vector containing the standard deviations of 0.5-2 SD above mean
         above_mean_std_vals <- vector(mode = "numeric", length = 11)
         names(above_mean_std_vals) <- as.character(seq(from = 0, to = 5, by = 0.5))
-        
+
         #Define a vector containing the tumor volume deviation (in percentage) of 0.5-2 SD below mean
         below_mean_volumes <- data.frame(matrix(nrow = 11, ncol = length(sampling_dates)))
         rownames(below_mean_volumes) <- as.character(seq(from = 0, to = 5, by = 0.5))
         colnames(below_mean_volumes) <- paste0("vol_deviation", sampling_dates)
-        
+
         #Define a vector containing the tumor volume deviation (in percentage) of 0.5-2 SD above mean
         above_mean_volumes <- data.frame(matrix(nrow = 11, ncol = length(sampling_dates)))
         rownames(above_mean_volumes) <- as.character(seq(from = 0, to = 5, by = 0.5))
@@ -2062,11 +2062,11 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list,
 
         #Define the standard deviation variable
         temp_std <- vector(mode = "numeric", length = 1)
-        
+
 
         ##Assign the dynamic function variables
 
-        #Assign the temp_df 
+        #Assign the temp_df
         temp_df <- input_list[[index]]
 
         estim_vols <- as.data.frame(temp_df[, grep(pattern = "estim", x = colnames(temp_df), ignore.case = TRUE)])
@@ -2082,34 +2082,34 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list,
 
         #Assign the standard deviations below mean (we start with 0 - the mean - and go down by half a sd compared to the mean)
         below_mean_std_vals <- mean_f_values_list[[index]] - (temp_std * std_bin)
-        
+
         #Assign the standard deviations above mean (we start with 0 - the mean - and go up by half a sd compared to the mean)
         above_mean_std_vals <- mean_f_values_list[[index]] + (temp_std * std_bin)
-        
+
         #Assign the tumor volume deviation below mean (in this case the tumor volumes are
         #over-estimated)
         for (c in seq_len(ncol(estim_vols))) {
             for (ind in seq_along(below_mean_std_vals)) {
                 filter_list[[ind]] <- dplyr::filter(temp_df, f_const_mean <= below_mean_std_vals[ind] & f_const_mean >= below_mean_std_vals[ind + 1])
-                
+
                 below_mean_volumes[ind, c] <- mean(filter_list[[ind]][, colnames(estim_vols)[c]], na.rm = TRUE) / mean(filter_list[[ind]][, colnames(uCT_vols)[c]], na.rm = TRUE)
-            
+
             }
 
         }
-        
+
         #Assign the tumor volume deviation above mean (in this case the tumor volumes are
         #under-estimated)
         for (c in seq_along(estim_vols)) {
             for (ind in seq_along(above_mean_std_vals)) {
                 filter_list[[ind]] <- dplyr::filter(temp_df, f_const_mean >= above_mean_std_vals[ind] & f_const_mean <= above_mean_std_vals[ind + 1])
-            
+
                 above_mean_volumes[ind, c] <- mean(filter_list[[ind]][, colnames(estim_vols)[c]], na.rm = TRUE) / mean(filter_list[[ind]][, colnames(uCT_vols)[c]], na.rm = TRUE)
-            
+
             }
 
         }
-        
+
         #corrected_volumes <- vector(mode = "numeric", length = nrow(temp_df))
         corrected_volumes <- data.frame(matrix(nrow = nrow(temp_df), ncol = 2))
         correction_factors <- data.frame(matrix(nrow = nrow(temp_df), ncol = 2))
@@ -2117,11 +2117,11 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list,
         #Perform the value correction for values which f-constants are below the mean f-constant (in this case the tumor volumes are
         #over-estimated). The outer for loop traverses the columns of the split off estimated_volumes dfs
         for (c in seq_len(ncol(estim_vols))) {
-            
+
             #The inner for loop traverses the columns of the temp_df (note: this is interchangeable with the estim_vols df as they have the same number of rows)
             for (r in seq_len(nrow(temp_df))) {
- 
-                #The innermost for-loop traverses the standard deviation values of f-constants below the mean f-constant (the SD here is calculated for the 
+
+                #The innermost for-loop traverses the standard deviation values of f-constants below the mean f-constant (the SD here is calculated for the
                 #f-constants and brackets of 0(mean)-0.5-1-1.5-2 SD are used)
                 for (e in seq_len(length(below_mean_std_vals) - 1)) {
 
@@ -2134,21 +2134,21 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list,
                         correction_factors[r, c] <- below_mean_volumes[e, c]
 
                     }
-                
+
                 }
 
             }
-            
+
         }
 
         #Perform the value correction for values which f-constants are above the mean f-constant (in this case the tumor volumes are
         #under-estimated). The outer for loop traverses the columns of the split off estimated_volumes dfs
         for (c in seq_len(ncol(estim_vols))) {
-            
+
             #The inner for loop traverses the columns of the temp_df (note: this is interchangeable with the estim_vols df as they have the same number of rows)
             for (r in seq_len(nrow(temp_df))) {
 
-                #The innermost for-loop traverses the standard deviation values of f-constants below the mean f-constant (the SD here is calculated for the 
+                #The innermost for-loop traverses the standard deviation values of f-constants below the mean f-constant (the SD here is calculated for the
                 #f-constants and brackets of 0(mean)-0.5-1-1.5-2 SD are used)
                 for (e in seq_len(length(above_mean_std_vals) - 1)) {
 
@@ -2161,11 +2161,11 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list,
                         correction_factors[r, c] <- above_mean_volumes[e, c]
 
                     }
-                
+
                 }
 
             }
-             
+
         }
 
         #Name the columns of the correction factor dataframe
@@ -2173,7 +2173,7 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list,
 
         #Assign the correction factor dataframes to the correction factor return list
         correction_factor_list[[index]] <- correction_factors
-        
+
 
         #Name the columns of the corrected volumes dataframe
         colnames(corrected_volumes) <- paste0("Corr_volume", sampling_dates)
@@ -2195,7 +2195,7 @@ tumor_vol_correction = function(estimated_tumor_volume_list, mean_f_values_list,
     #Name the return_list elements according to the input list
     names(return_list) <- names(estimated_tumor_volume_list)
 
-    
+
     ## Return the output list
     return(return_list)
 
@@ -2231,7 +2231,7 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
 
         #Initialize a new temporary df containing all the volume columns
         temp_vol_df <- measurement_list[[index]][, grep(pattern = "uct|volume", x = colnames(measurement_list[[index]]), ignore.case = TRUE)]
-        
+
         #An if statement controlling which values should be compared the corrected or the normal estimated
         if (correction == TRUE) {
             #Initialize a temporary uCT dataframe containing the measured uCT volumes
@@ -2242,12 +2242,12 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
 
             #Merge the uCT and corrected volumes into one comparison dataframe
             temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
-            
+
             #Initialize the contingency table variable
             comp_table <- data.frame()
 
             #Initialize the dataframe which will hold the calculated p-values
-            ks_lst <- vector(mode = "list", length = length(sampling_dates)) 
+            ks_lst <- vector(mode = "list", length = length(sampling_dates))
 
             #This for loop will traverse the uCT sampling dates
             for (date in seq_along(sampling_dates)) {
@@ -2262,7 +2262,7 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 ks_lst[[date]] <- ks.test(x = uct_volumes, y = corrected_volumes)
-                
+
             }
 
         } else {
@@ -2273,21 +2273,21 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
             #Initialize a temporary uCT dataframe containing the corrected estimated volumes
             temp_corr_df <- as.data.frame(temp_vol_df[, grep(pattern = "estim", x = colnames(temp_vol_df), ignore.case = TRUE)])
             colnames(temp_corr_df) <- colnames(temp_vol_df)[grep(pattern = "estim", x = colnames(temp_vol_df), ignore.case = TRUE)]
-            
+
             #Merge the uCT and corrected volumes into one comparison dataframe
             temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
-            
+
             #Initialize the contingency table variable
             comp_table <- data.frame()
 
             #Initialize the dataframe which will hold the calculated p-values
-            ks_lst <- vector(mode = "list", length = length(sampling_dates)) 
+            ks_lst <- vector(mode = "list", length = length(sampling_dates))
 
             #This for loop will traverse the uCT sampling dates
             for (date in seq_along(sampling_dates)) {
                 #Initialize the comparison table by grabbing the uCT and corrected estimated volumes by the dates
                 comp_table <- temp_comp_df[, grep(pattern = sampling_dates[date], x = colnames(temp_comp_df), ignore.case = TRUE)]
-                
+
                 #Initialize a variable to hold the uCT measurements
                 uct_volumes <- comp_table[, 1]
 
@@ -2296,7 +2296,7 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 ks_lst[[date]] <- ks.test(x = uct_volumes, y = estimated_volumes)
-                
+
             }
 
         }
@@ -2311,7 +2311,7 @@ ks_gof_test = function(measurement_list, correction = TRUE, quiet) {
 
     #Assign the proper list element names to the output list
     names(ks_result_out_list) <- names(measurement_list)
-    
+
 
     ##Return the output list
     return(ks_result_out_list)
@@ -2359,7 +2359,7 @@ pearson_test = function(measurement_list, correction = TRUE, quiet) {
 
             #Merge the uCT and corrected volumes into one comparison dataframe
             temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
-            
+
             #Initialize the contingency table variable
             comp_table <- data.frame()
 
@@ -2373,7 +2373,7 @@ pearson_test = function(measurement_list, correction = TRUE, quiet) {
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 pearson_corr[, date] <- cor(x = comp_table[, 1], y = comp_table[, 2], method = "pearson")
-                
+
             }
 
         } else {
@@ -2384,11 +2384,11 @@ pearson_test = function(measurement_list, correction = TRUE, quiet) {
             #Initialize a temporary uCT dataframe containing the corrected estimated volumes
             temp_corr_df <- as.data.frame(temp_vol_df[, grep(pattern = "estim", x = colnames(temp_vol_df), ignore.case = TRUE)])
             colnames(temp_corr_df) <- colnames(temp_vol_df)[grep(pattern = "estim", x = colnames(temp_vol_df), ignore.case = TRUE)]
-            
+
 
             #Merge the uCT and corrected volumes into one comparison dataframe
             temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
-            
+
             #Initialize the contingency table variable
             comp_table <- data.frame()
 
@@ -2402,7 +2402,7 @@ pearson_test = function(measurement_list, correction = TRUE, quiet) {
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 pearson_corr[, date] <- cor(x = comp_table[, 1], y = comp_table[, 2], method = "pearson")
-                
+
             }
         }
 
@@ -2416,7 +2416,7 @@ pearson_test = function(measurement_list, correction = TRUE, quiet) {
 
     #Assign the proper list element names to the output list
     names(r_val_out_list) <- names(measurement_list)
-    
+
 
     ##Return the output list
     return(r_val_out_list)
@@ -2464,7 +2464,7 @@ mae_test = function(measurement_list, correction = TRUE, quiet) {
 
             #Merge the uCT and corrected volumes into one comparison dataframe
             temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
-            
+
             #Initialize the contingency table variable
             comp_table <- data.frame()
 
@@ -2478,7 +2478,7 @@ mae_test = function(measurement_list, correction = TRUE, quiet) {
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 mae_values[, date] <- mean(abs(comp_table[, 1] - comp_table[, 2]), na.rm = TRUE)
-                
+
             }
 
         } else {
@@ -2492,7 +2492,7 @@ mae_test = function(measurement_list, correction = TRUE, quiet) {
 
             #Merge the uCT and corrected volumes into one comparison dataframe
             temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
-            
+
             #Initialize the contingency table variable
             comp_table <- data.frame()
 
@@ -2506,7 +2506,7 @@ mae_test = function(measurement_list, correction = TRUE, quiet) {
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 mae_values[, date] <- mean(abs(comp_table[, 1] - comp_table[, 2]), na.rm = TRUE)
-                
+
             }
         }
 
@@ -2520,7 +2520,7 @@ mae_test = function(measurement_list, correction = TRUE, quiet) {
 
     #Assign the proper list element names to the output list
     names(mae_val_out_list) <- names(measurement_list)
-    
+
 
     ##Return the output list
     return(mae_val_out_list)
@@ -2568,7 +2568,7 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
 
             #Merge the uCT and corrected volumes into one comparison dataframe
             temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
-            
+
             #Initialize the contingency table variable
             comp_table <- data.frame()
 
@@ -2582,7 +2582,7 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 rmse_values[, date] <- sqrt(mean((comp_table[, 1] - comp_table[, 2]) ^ 2, na.rm = TRUE))
-                
+
             }
 
         } else {
@@ -2596,7 +2596,7 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
 
             #Merge the uCT and corrected volumes into one comparison dataframe
             temp_comp_df <- cbind(temp_uct_df, temp_corr_df)
-            
+
             #Initialize the contingency table variable
             comp_table <- data.frame()
 
@@ -2610,7 +2610,7 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
 
                 #Run the Pearson test on the cont table and assign the r-values to the corresponding dataframe
                 rmse_values[, date] <- sqrt(mean((comp_table[, 1] - comp_table[, 2]) ^ 2, na.rm = TRUE))
-                
+
             }
         }
 
@@ -2624,7 +2624,7 @@ rmse_test = function(measurement_list, correction = TRUE, quiet) {
 
     #Assign the proper list element names to the output list
     names(rmse_val_out_list) <- names(measurement_list)
-    
+
 
     ##Return the output list
     return(rmse_val_out_list)
@@ -2695,10 +2695,10 @@ calculate_correction_matrixes = function(correction_factor_lst, uct_input, corr_
 
             #Run the interpolation using the approx function
             for (i in seq_len(nrow(corr_factor_matrix))) {
-            
+
             # Perform interpolation and assign the y (interpolated values) to the proper column positions (columns_to_interpolate is equal to $x)
             corr_factor_matrix[i, columns_to_interpolate] <- approx(as.numeric(corr_factor_matrix[i, ]), xout = columns_to_interpolate, method = "linear", rule = 2)$y
-            
+
             }
 
             #Assign the correction matrix to the output list
@@ -2722,29 +2722,29 @@ calculate_correction_matrixes = function(correction_factor_lst, uct_input, corr_
             #Initialize the correction factor vector for each list element
             corr_factor_vector <- vector(mode = "numeric", length = nrow(temp_corr_df))
 
-            #Initialize the correction factor vector for each list element and 
+            #Initialize the correction factor vector for each list element and
             #calculate the mean correction factors using the early and late correction factors
             corr_factor_vector <- rowMeans(temp_corr_df, na.rm = TRUE)
 
             #Assign the correction vector to the output list
             output_list[[index]] <- corr_factor_vector
-            
+
         }
 
     } else {
         #Throw an error and stop execution
         stop("The given correction method is invalid. Only 'mean_correction' and 'linear_interpolation' are accepted.")
-        
+
     }
-    
-    
+
+
     #Name the output list elements according to the input list
     names(output_list) <- names(correction_factor_lst)
-    
+
 
     ##Return the output list
     return(output_list)
-    
+
 
 }
 
@@ -2755,21 +2755,21 @@ calculate_correction_matrixes = function(correction_factor_lst, uct_input, corr_
 ## NOTE: this is a variant of the estimate_tumor_volume function
 estimate_total_tumor_volume = function(input_measurement_list, mean_f_values_list, remove_na_samples, quiet) {
     ##Declare the function variables
-  
+
 
     ##Assign function variables
     input_list <- input_measurement_list[[2]]
-    
+
     #List to return
     return_list <- vector(mode = "list", length = length(input_list)) #<- this is the fix!!!
-    
+
 
     #Initialize a progress bar variable will allow to visualize a progression bar
     cli::cli_progress_bar(name = "Estimate total tumor volumes", total = length(input_list), type = "iterator", clear = FALSE)
 
 
     ##Calculations
-    
+
     #This for loop will walk along the input list to access each element
     #NOTE: the length of the input_df and the mean_f_values_list is the same, so indexes can be used for both
     for (index in seq_along(input_list)) {
@@ -2789,12 +2789,12 @@ estimate_total_tumor_volume = function(input_measurement_list, mean_f_values_lis
 
         #Initialize a temporary df which will contain the estimated tumor volumes
         temp_vol_df <- data.frame(matrix(nrow = nrow(temp_lxw_df), ncol = ncol(temp_lxw_df)))
-        
-        #This nested for loop will progress through the LxW columns and rows of each individual list element (dataframe) to estimate the tumor volumes using the 
+
+        #This nested for loop will progress through the LxW columns and rows of each individual list element (dataframe) to estimate the tumor volumes using the
         #appropriate formula
         for (col in seq_len(ncol(temp_lxw_df))) {
             for (row in seq_len(nrow(temp_lxw_df))) {
-            
+
                 #Estimate and assign the tumor volumes to each individual sample in the temp_df
                 temp_vol_df[row, col] <- (pi / 6) * mean_f_values_list[[index]] * (temp_lxw_df[row, col])^(3 / 2)
             }
@@ -2820,7 +2820,7 @@ estimate_total_tumor_volume = function(input_measurement_list, mean_f_values_lis
 
     #Name the return_list elements according to the input list
     names(return_list) <- names(input_list)
-  
+
 
     ## Return the modified dataframes
     return(return_list)
@@ -2868,7 +2868,7 @@ correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
 
             #Initialize a dataframe holding only the tumor measurement columns
             temp_vol_df <- temp_calip_df[, grep(pattern = "volume", x = colnames(temp_calip_df), ignore.case = TRUE)]
-            
+
             #Apply the correction by dividing the caliper df with the correction matrix using the mapply function
             temp_corr_calip_df <- as.data.frame(mapply(FUN = "/", temp_vol_df, temp_corr_df))
 
@@ -2893,7 +2893,7 @@ correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
         return(output_list)
 
     } else if (corr_method == "mean_correction") {
-        
+
         for (index in seq_along(final_tumor_volume_lst)) {
             ##Declare dynamic variables
 
@@ -2946,9 +2946,9 @@ correct_total_tumor_volumes = function(final_tumor_volume_lst, correction_matrix
     } else {
         #Throw an error and stop execution
         stop("The given correction method is invalid. Only 'mean_correction' and 'linear_interpolation' are accepted.")
-        
+
     }
-       
+
 }
 
 
@@ -2988,7 +2988,7 @@ create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
 
         #Initialize a variable holding only the volumes
         temp_vol_df <- temp_df[, grep(pattern = "uct|volume", x = colnames(temp_df), ignore.case = TRUE)]
-        
+
 
         ##Processing
 
@@ -3021,8 +3021,8 @@ create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
 
                 #Name the x and y corresponding columns for ggplot
                 colnames(plot_df)[2:3] <- c("uct", "corr")
-                
-                if (theme == "light") { 
+
+                if (theme == "light") {
                     #Plot the dataframe
                     plot <- suppressMessages(ggplot2::ggplot(data = plot_df,
                         mapping = aes(x = uct, y = corr,  color = Mouse_ID)) +
@@ -3033,7 +3033,8 @@ create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
                         ggplot2::labs(x = expression("uCT volumes mm"^3), y = expression("Corrected volumes mm"^3),
                                 color = expression("Mouse IDs")) +
                         ggplot2::theme_classic() +
-                        ggplot2::theme(plot.title = element_text(hjust = 0.5)))
+                        ggplot2::theme(plot.title = element_text(hjust = 0.5),
+                                       text = element_text(size = 18)))
 
                 } else if (theme == "dark") {
                     #Plot the dataframe
@@ -3057,7 +3058,8 @@ create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
                             legend.background = element_rect(fill = "black"),
                             legend.key = element_rect(fill = "black", color = "black"),
                             legend.text = element_text(color = "white"),
-                            legend.title = element_text(color = "white")))
+                            legend.title = element_text(color = "white"),
+                            text = element_text(size = 18)))
 
                 }
 
@@ -3082,7 +3084,7 @@ create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
 
             plot_df_est <- cbind(temp_df$Mouse_ID, plot_df_uct_col, plot_df_est_col)
             colnames(plot_df_est)[1] <- "Mouse_ID"
-            
+
             #Initialize a new variable containing the unique sampling dates for a given dataframe
             dates <- unique(as.character(stringr::str_extract_all(string = colnames(temp_vol_df), pattern = "[0-9\\.0-9]+$", simplify = TRUE)))
 
@@ -3091,19 +3093,19 @@ create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
             for (item in seq_along(dates)) {
                 plot_names[item] <- paste0("plot_", dates[item])
             }
-            
+
             #Initialize a new variable which will contain each individual plots for each dataframe
             plot_list <- vector(mode = "list", length = length(dates))
 
             #This for loop will traverse the unique sampling dates to plot each date separately (due to volume differences)
             for (date in seq_along(dates)) {
-            
+
                 #Initialize a new variable to contain the dataframes transformed for lotting
                 plot_df <- plot_df_est[, c(1, grep(pattern = dates[date], x = colnames(plot_df_est), ignore.case = TRUE))]
-               
+
                 #Name the x and y corresponding columns for ggplot
                 colnames(plot_df)[2:3] <- c("uct", "estim")
-                
+
                 if (theme == "light") {
                     #Plot the dataframe
                     plot <- suppressMessages(ggplot2::ggplot(data = plot_df,
@@ -3115,7 +3117,8 @@ create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
                             ggplot2::labs(x = expression("uCT volumes mm"^3), y = expression("Estimated volumes mm"^3),
                                     color = expression("Mouse IDs")) +
                             ggplot2::theme_classic() +
-                            ggplot2::theme(plot.title = element_text(hjust = 0.5)))
+                            ggplot2::theme(plot.title = element_text(hjust = 0.5),
+                                           text = element_text(size = 18)))
 
                 } else if (theme == "dark") {
                     #Plot the dataframe
@@ -3139,10 +3142,11 @@ create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
                             legend.background = element_rect(fill = "black"),
                             legend.key = element_rect(fill = "black", color = "black"),
                             legend.text = element_text(color = "white"),
-                            legend.title = element_text(color = "white")))
+                            legend.title = element_text(color = "white"),
+                            text = element_text(size = 18)))
 
                 }
-                
+
 
                 #Assign the plot to the plot list
                 plot_list[[date]] <- plot
@@ -3150,13 +3154,13 @@ create_qc_plots = function(unified_list, plot_qc_vol, theme, quiet) {
 
             #Name the elements of the plot list base don the plot names
             names(plot_list) <- plot_names
-            
+
             #Assign the plot list to the output plot list
             output_plots_list[[index]] <- plot_list
 
         }
-        
-        
+
+
     }
 
     #Name the elements (sub lists) of the final output lists
@@ -3202,7 +3206,7 @@ plot_growth_curves = function(final_vol_lst, vol_corrected, theme, quiet) {
         #Initialize a new variable containing the sampling dates for a given dataframe
         dates <- as.character(stringr::str_extract_all(string = lng_temp_df$Full_sample_IDs, pattern = "[0-9\\.0-9]+$", simplify = TRUE))
 
-        #Initialize a new variable containing the unique sampling dates for a given dataframe 
+        #Initialize a new variable containing the unique sampling dates for a given dataframe
         unique_dates <- unique(dates)
 
         #Initialize a new variable containing the tumor volume type (estimated or corrected)
@@ -3225,7 +3229,8 @@ plot_growth_curves = function(final_vol_lst, vol_corrected, theme, quiet) {
                             labs(x = expression("Measurement dates"), y = expression("Tumor volumes mm"^3),
                                 color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
                             ggplot2::theme_classic() +
-                            ggplot2::theme(plot.title = element_text(hjust = 0.5)))
+                            ggplot2::theme(plot.title = element_text(hjust = 0.5),
+                                           text = element_text(size = 18)))
 
             } else if (theme == "dark") {
                 #Plot the individual long pivot dataframes
@@ -3250,10 +3255,11 @@ plot_growth_curves = function(final_vol_lst, vol_corrected, theme, quiet) {
                             legend.background = element_rect(fill = "black"),
                             legend.key = element_rect(fill = "black", color = "black"),
                             legend.text = element_text(color = "white"),
-                            legend.title = element_text(color = "white")))
+                            legend.title = element_text(color = "white"),
+                            text = element_text(size = 18)))
 
             }
-            
+
 
             #Assign the plot to the output list
             output_plots_list[[index]] <- plot
@@ -3275,7 +3281,8 @@ plot_growth_curves = function(final_vol_lst, vol_corrected, theme, quiet) {
                             labs(x = expression("Measurement dates"), y = expression("Tumor volumes mm"^3),
                                 color = expression("Mouse IDs"), fill = expression("Mouse IDs")) +
                             ggplot2::theme_classic() +
-                            ggplot2::theme(plot.title = element_text(hjust = 0.5)))
+                            ggplot2::theme(plot.title = element_text(hjust = 0.5),
+                                           text = element_text(size = 18)))
 
             } else if (theme == "dark") {
                 #Plot the individual long pivot dataframes
@@ -3300,10 +3307,11 @@ plot_growth_curves = function(final_vol_lst, vol_corrected, theme, quiet) {
                             legend.background = element_rect(fill = "black"),
                             legend.key = element_rect(fill = "black", color = "black"),
                             legend.text = element_text(color = "white"),
-                            legend.title = element_text(color = "white")))
+                            legend.title = element_text(color = "white"),
+                            text = element_text(size = 18)))
 
             }
-            
+
 
             #Assign the plot to the output list
             output_plots_list[[index]] <- plot
@@ -3312,7 +3320,7 @@ plot_growth_curves = function(final_vol_lst, vol_corrected, theme, quiet) {
             names(output_plots_list)[[index]] <- paste0("Projection_of_estimated_tumor_volumes_", unique(lng_temp_df$Treatment_group_ID), "_", unique(lng_temp_df$Treatment))
 
         }
-        
+
     }
 
 
@@ -3370,7 +3378,7 @@ single_reference = arguments$single_reference_mode) {
         fitted_caliper_list = fitted_measurement_data[[2]],
         quiet = silent)
 
-    
+
     ##Calculate the sample and measurement date specific f-constants and their sample specific means
     unif_mData_f_const <- calculate_f_constants(unified_measurement_data, quiet = silent)
 
@@ -3389,17 +3397,17 @@ single_reference = arguments$single_reference_mode) {
 
         outlier_detector(calculate_f_constants_output_list = unif_mData_f_const,
             is_data_normal_output_list = is_normal_data,
-            nonparam_test = nonparametric_test, 
+            nonparam_test = nonparametric_test,
             quiet = silent)
 
     } else if (outlier_handl == "remove") {
         if (verb == TRUE) {
             cat("Outlier f-constant value detection and removal was requested.")
         }
-        
+
         unif_mData_clean_f_const <- outlier_cleaner(calculate_f_constants_output_list = unif_mData_f_const,
         is_data_normal_output_list = is_normal_data,
-        nonparam_test = nonparametric_test, 
+        nonparam_test = nonparametric_test,
         quiet = silent)
 
     } else if (outlier_handl == "none") {
@@ -3411,7 +3419,7 @@ single_reference = arguments$single_reference_mode) {
 
     ##Calculate the grand mean f-constants to each treatment condition
     ##and estimate the tumor volumes on the trimmed dataset for further QC
-    
+
     #Calculate the grand mean f-constatnts to each treatment condition based
     #on the sample mean f-constants
     #Note: the calculation will be affetect by the presence or absence of possible outliers whihc is controlled
@@ -3425,20 +3433,20 @@ single_reference = arguments$single_reference_mode) {
     } else if (outlier_handl == "none") {
         grand_fc_means <- calc_mean_f(calculate_f_constants_output_list = unif_mData_f_const, quiet = silent)
     }
-    
+
     #Estimate the tumor volume for the trimmed down measurment data which will be
     #used for further QC
     unif_mData_estim_vols <- estimate_tumor_volume(input_measurement_list = unif_mData_f_const,
-        mean_f_values_list = grand_fc_means, 
+        mean_f_values_list = grand_fc_means,
         quiet = silent)
 
-    if (single_reference == FALSE) { 
+    if (single_reference == FALSE) {
         ##Correct the estimated tumor volumes on the trimmed dataset using the
         ##standard-deviation distance test
         ##NOTE:this function also returns a correction_factor_list global variable
         ##for later use by other functions
         unif_mData_corr_vols <- tumor_vol_correction(estimated_tumor_volume_list = unif_mData_estim_vols,
-            mean_f_values_list = grand_fc_means, 
+            mean_f_values_list = grand_fc_means,
             quiet = silent)
 
 
@@ -3453,7 +3461,7 @@ single_reference = arguments$single_reference_mode) {
             dir.create(qc_dir)
 
             if (verb == TRUE) {
-                cat("A new folder with the following path:", qc_dir, "\n", 
+                cat("A new folder with the following path:", qc_dir, "\n",
                 "was created to stor the goodness of fit test and other qc test outputs.")
             }
 
@@ -3465,7 +3473,7 @@ single_reference = arguments$single_reference_mode) {
             ks_gof_results_estim <- ks_gof_test(measurement_list = unif_mData_corr_vols,
                 correction = FALSE,
                 quiet = silent)
-                
+
 
             #Run the goodness of fit test on the corrected volumes containing dataframe
             ks_gof_results_corr <- ks_gof_test(measurement_list = unif_mData_corr_vols,
@@ -3477,7 +3485,7 @@ single_reference = arguments$single_reference_mode) {
 
             #Write the ks-gof_test results as a .txt file
             capture.output(print(ks_gof_results_estim), file = paste0(qc_dir, "/", "KS_goodness_of_fit_test_results_for_the_estimated_and_measured_volumes.txt"))
-                
+
         } else {
 
             if (verb == TRUE) {
@@ -3500,7 +3508,7 @@ single_reference = arguments$single_reference_mode) {
 
             #Write the ks-gof_test results as a .txt file
             capture.output(print(ks_gof_results_estim), file = paste0(qc_dir, "/", "KS_goodness_of_fit_test_results_for_the_estimated_and_measured_volumes.txt"))
-            
+
         }
 
 
@@ -3576,7 +3584,7 @@ single_reference = arguments$single_reference_mode) {
             dir.create(qc_plots_dir)
 
             if (verb == TRUE) {
-                cat("A new folder with the following path:", qc_plots_dir, "\n", 
+                cat("A new folder with the following path:", qc_plots_dir, "\n",
                 "was created to stor the goodness of fit test and other qc test outputs.")
             }
 
@@ -3596,7 +3604,7 @@ single_reference = arguments$single_reference_mode) {
 
             #Initialize a new list which will contain the current list element of the qc_plots list
             temp_plot_list <- qc_plots_estim[[element]]
-            
+
             #The outer loop traverses the main plot list
             for (plot in seq_along(temp_plot_list)) {
                 #Extract the names of each main plot element (original .csv file name without extension)
@@ -3607,7 +3615,7 @@ single_reference = arguments$single_reference_mode) {
 
                 #Set the output device for saving the plots
                 png(filename = output_plot_name, width = 1500, height = 750, units = "px")
-                
+
                 #Print the plot to the output device
                 print(temp_plot_list[[plot]])
 
@@ -3632,7 +3640,7 @@ single_reference = arguments$single_reference_mode) {
 
             #Initialize a new list which will contain the current list element of the qc_plots list
             temp_plot_list <- qc_plots_corr[[element]]
-            
+
             #The outer loop traverses the main plot list
             for (plot in seq_along(temp_plot_list)) {
                 #Extract the names of each main plot element (original .csv file name without extension)
@@ -3643,7 +3651,7 @@ single_reference = arguments$single_reference_mode) {
 
                 #Set the output device for saving the plots
                 png(filename = output_plot_name, width = 1500, height = 750, units = "px")
-                
+
                 #Pring the plot to the output device
                 print(temp_plot_list[[plot]])
 
@@ -3671,7 +3679,7 @@ single_reference = arguments$single_reference_mode) {
 
             #Write the pearson correlation results as a .txt file
             capture.output(print(pearson_results_estim), file = paste0(qc_dir, "/", "Pearson_correlation_results_for_the_connected_plots_estimated_vols.txt"))
-                
+
         } else {
 
             if (verb == TRUE) {
@@ -3693,7 +3701,7 @@ single_reference = arguments$single_reference_mode) {
 
             #Write the pearson correlation results as a .txt file
             capture.output(print(pearson_results_estim), file = paste0(qc_dir, "/", "Pearson_correlation_results_for_the_connected_plots_estimated_vols.txt"))
-            
+
         }
 
 
@@ -3735,7 +3743,7 @@ single_reference = arguments$single_reference_mode) {
             dir.create(qc_dir)
 
             if (verb == TRUE) {
-                cat("A new folder with the following path:", qc_dir, "\n", 
+                cat("A new folder with the following path:", qc_dir, "\n",
                 "was created to stor the goodness of fit test and other qc test outputs.")
             }
 
@@ -3750,7 +3758,7 @@ single_reference = arguments$single_reference_mode) {
 
             #Write the ks-gof_test results as a .txt file
             capture.output(print(ks_gof_results_estim), file = paste0(qc_dir, "/", "KS_goodness_of_fit_test_results_for_the_estimated_and_measured_volumes.txt"))
-                
+
         } else {
 
             if (verb == TRUE) {
@@ -3765,7 +3773,7 @@ single_reference = arguments$single_reference_mode) {
 
             #Write the ks-gof_test results as a .txt file
             capture.output(print(ks_gof_results_estim), file = paste0(qc_dir, "/", "KS_goodness_of_fit_test_results_for_the_estimated_and_measured_volumes.txt"))
-            
+
         }
 
 
@@ -3819,7 +3827,7 @@ single_reference = arguments$single_reference_mode) {
             dir.create(qc_plots_dir)
 
             if (verb == TRUE) {
-                cat("A new folder with the following path:", qc_plots_dir, "\n", 
+                cat("A new folder with the following path:", qc_plots_dir, "\n",
                 "was created to stor the goodness of fit test and other qc test outputs.")
             }
 
@@ -3839,7 +3847,7 @@ single_reference = arguments$single_reference_mode) {
 
             #Initialize a new list which will contain the current list element of the qc_plots list
             temp_plot_list <- qc_plots_estim[[element]]
-            
+
             #The outer loop traverses the main plot list
             for (plot in seq_along(temp_plot_list)) {
                 #Extract the names of each main plot element (original .csv file name without extension)
@@ -3850,7 +3858,7 @@ single_reference = arguments$single_reference_mode) {
 
                 #Set the output device for saving the plots
                 png(filename = output_plot_name, width = 1500, height = 750, units = "px")
-                
+
                 #Print the plot to the output device
                 print(temp_plot_list[[plot]])
 
@@ -3870,7 +3878,7 @@ single_reference = arguments$single_reference_mode) {
 
             #Write the pearson correlation results as a .txt file
             capture.output(print(pearson_results_estim), file = paste0(qc_dir, "/", "Pearson_correlation_results_for_the_connected_plots_estimated_vols.txt"))
-                
+
         } else {
 
             if (verb == TRUE) {
@@ -3884,14 +3892,14 @@ single_reference = arguments$single_reference_mode) {
 
             #Write the pearson correlation results as a .txt file
             capture.output(print(pearson_results_estim), file = paste0(qc_dir, "/", "Pearson_correlation_results_for_the_connected_plots_estimated_vols.txt"))
-            
+
         }
 
     }
-    
 
 
-    ##Estimate the total tumor volumes using the caliper measurements 
+
+    ##Estimate the total tumor volumes using the caliper measurements
     estim_total_volumes <- estimate_total_tumor_volume(input_measurement_list = clean_measurement_data,
         mean_f_values_list = grand_fc_means,
         remove_na_samples = rm_na_samples,
@@ -3938,7 +3946,7 @@ single_reference = arguments$single_reference_mode) {
 
         } else if (volume_corr == TRUE && rm_na_samples == FALSE) {
             ##If possible, return both corrected and estimated volumes so the user can choose which one to use
-            
+
             if (verb == TRUE) {
                 cat("Volume correction was requested, however the NA containing samples were not removed, therefore the correction method
                 will default to 'mean_correction.")
@@ -4011,7 +4019,7 @@ single_reference = arguments$single_reference_mode) {
             dir.create(plot_dir)
 
             if (verb == TRUE) {
-                cat("A new folder with the following path:", plot_dir, "\n", 
+                cat("A new folder with the following path:", plot_dir, "\n",
                 "was created to stor the goodness of fit test and other qc test outputs.")
             }
 
@@ -4021,7 +4029,7 @@ single_reference = arguments$single_reference_mode) {
         if (volume_corr == TRUE) {
             ##If volume correction is true, plot both the corrected and estimated volumes
 
-            
+
             #Plot the projected volume-corrected tumor volumes
             corrected_vol_plots <- plot_growth_curves(final_vol_lst = corr_total_volumes,
                 vol_corrected = TRUE,
@@ -4045,14 +4053,14 @@ single_reference = arguments$single_reference_mode) {
 
                 #Set the name of the output file
                 output_plot_name <- paste0(plot_dir, "/", names(corrected_vol_plots)[element], ".png")
-                
+
                 #Set an output device
                 png(filename = output_plot_name, width = 1500, height = 750, units = "px")
-                
+
                 #Print the plot files to an output device
                 print(temp_plot)
-                
-                
+
+
                 #Reset the output device
                 dev.off()
 
@@ -4081,14 +4089,14 @@ single_reference = arguments$single_reference_mode) {
 
                 #Set the name of the output file
                 output_plot_name <- paste0(plot_dir, "/", names(estimated_vol_plots)[element], ".png")
-                
+
                 #Set an output device
                 png(filename = output_plot_name, width = 1500, height = 750, units = "px")
-                
+
                 #Print the plot files to an output device
                 print(temp_plot)
-                
-                
+
+
                 #Reset the output device
                 dev.off()
 
@@ -4118,14 +4126,14 @@ single_reference = arguments$single_reference_mode) {
 
                 #Set the name of the output file
                 output_plot_name <- paste0(plot_dir, "/", names(estimated_vol_plots)[element], ".png")
-                
+
                 #Set an output device
                 png(filename = output_plot_name, width = 1500, height = 750, units = "px")
-                
+
                 #Print the plot files to an output device
                 print(temp_plot)
-                
-                
+
+
                 #Reset the output device
                 dev.off()
 
@@ -4175,7 +4183,7 @@ single_reference = arguments$single_reference_mode) {
             dir.create(plot_dir)
 
             if (verb == TRUE) {
-                cat("A new folder with the following path:", plot_dir, "\n", 
+                cat("A new folder with the following path:", plot_dir, "\n",
                 "was created to stor the goodness of fit test and other qc test outputs.")
             }
 
@@ -4212,14 +4220,14 @@ single_reference = arguments$single_reference_mode) {
 
                 #Set the name of the output file
                 output_plot_name <- paste0(plot_dir, "/", names(estimated_vol_plots)[element], ".png")
-                
+
                 #Set an output device
                 png(filename = output_plot_name, width = 1500, height = 750, units = "px")
-                
+
                 #Print the plot files to an output device
                 print(temp_plot)
-                
-                
+
+
                 #Reset the output device
                 dev.off()
 
@@ -4227,7 +4235,7 @@ single_reference = arguments$single_reference_mode) {
 
         }
     }
-    
+
 
 
     ##Implement a success message
@@ -4240,9 +4248,9 @@ single_reference = arguments$single_reference_mode) {
         print(sessionInfo())
         cat(" \n")
     }
-    
 
-}   
+
+}
 
 
 #################################################               Section end             #################################################
